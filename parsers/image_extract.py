@@ -21,10 +21,12 @@ def extract_images(pdf_path):
 def extract_and_save_images_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)  # Open the PDF file
 
+    output = []
     for page_number in range(len(doc)):
         page = doc[page_number]
         # Extract images
         image_list = page.get_images(full=True)
+        output.extend(image_list)
 
         # Save images found on the current page
         for img_index, img in enumerate(image_list, 1):
@@ -40,6 +42,7 @@ def extract_and_save_images_from_pdf(pdf_path):
             print(f"Saved image to {image_filename}")
 
     doc.close()
+    return output
 
 
 images = extract_and_save_images_from_pdf(
