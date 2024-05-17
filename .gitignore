@@ -2,3 +2,5 @@ poetry.lock
 .env
 database/
 **/*.DS_store
+**/__pycache__/
+**/images/
