@@ -1,5 +1,7 @@
 import fitz
 
+from pathlib import Path
+
 
 def extract_images(pdf_path):
     """Extract the metadata of images from a PDF file."""
@@ -18,35 +20,52 @@ def extract_images(pdf_path):
     return images
 
 
+def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
+    page = doc[page_number]
+    save_dir_path = Path(save_dir)
+    if not save_dir_path.exists():
+        save_dir_path.mkdir()
+
+    # Extract images
+    images = page.get_images(full=True)
+
+    # Save images found on the current page
+    for img_index, img in enumerate(images, 1):
+        xref = img[0]  # xref is the reference number for the image
+        base_image = doc.extract_image(xref)
+        image_bytes = base_image["image"]  # The image in bytes
+        image_ext = base_image["ext"]  # The image file extension
+
+        # Write the image to a file
+        image_save_path = (
+            save_dir_path / f"image_{page_number+1}_{img_index}.{image_ext}"
+        )
+        with image_save_path.open("wb") as img_file:
+            img_file.write(image_bytes)
+
+    print(f"Saved {len(images)} image(s) to {save_dir_path._str}")
+    return images
+
+
 def extract_and_save_images_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)  # Open the PDF file
 
     output = []
     for page_number in range(len(doc)):
-        page = doc[page_number]
-        # Extract images
-        image_list = page.get_images(full=True)
-        output.extend(image_list)
-
-        # Save images found on the current page
-        for img_index, img in enumerate(image_list, 1):
-            xref = img[0]  # xref is the reference number for the image
-            base_image = doc.extract_image(xref)
-            image_bytes = base_image["image"]  # The image in bytes
-            image_ext = base_image["ext"]  # The image file extension
-
-            # Write the image to a file
-            image_filename = f"image_{page_number+1}_{img_index}.{image_ext}"
-            with open(image_filename, "wb") as img_file:
-                img_file.write(image_bytes)
-            print(f"Saved image to {image_filename}")
+        output.extend(extract_images_per_page(doc, page_number))
 
     doc.close()
     return output
 
 
-images = extract_and_save_images_from_pdf(
-    "/Users/lwj/workspace/chunky/database/yonsei/연도별졸업요건_2024.pdf"
-)
-# print(images[0])  # -> (19, 0, 226, 200, 8, 'DeviceRGB', '', 'Im1', 'DCTDecode', 0)
-# print(images[1])  #  -> (791, 0, 1913, 337, 8, 'DeviceRGB', '', 'Im2', 'DCTDecode', 0)
+# doc = fitz.open(
+#     "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
+# )
+# images = extract_and_save_images_from_pdf(
+#     "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
+# )
+# img = doc[3].get_image_bbox(images[-2])
+# cnt = doc[3].get_text(option="blocks")
+# print(img)
+# print("====================================")
+# print(cnt)
