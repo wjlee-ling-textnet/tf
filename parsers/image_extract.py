@@ -29,6 +29,7 @@ def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
     # Extract images
     images = page.get_images(full=True)
 
+    paths = []
     # Save images found on the current page
     for img_index, img in enumerate(images, 1):
         xref = img[0]  # xref is the reference number for the image
@@ -43,8 +44,13 @@ def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
         with image_save_path.open("wb") as img_file:
             img_file.write(image_bytes)
 
+        # Add the image save path to the 'image' tuple
+        # Cannot append it to the end of the original tuple because it checks whether the the last item of the tuple is a int or not
+        # images[img_index - 1] = (*img[:4], image_save_path, *img[5:])
+        paths.append(image_save_path)
+
     print(f"Saved {len(images)} image(s) to {save_dir_path._str}")
-    return images
+    return images, paths
 
 
 def extract_and_save_images_from_pdf(pdf_path):
