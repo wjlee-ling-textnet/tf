@@ -76,7 +76,7 @@ def extract_elements_per_page(pdf_path, save_dir):
 
 def extract_tables_unstructured(pdf_path):
     elements = partition_pdf(
-        filename=PATH,
+        filename=pdf_path,
         infer_table_structure=True,
         langauges=["kor", "eng"],
         extract_images_in_pdf=True,
