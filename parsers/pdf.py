@@ -2,6 +2,8 @@ from parsers.image_extract import extract_images_per_page
 from parsers.utilities import get_column_boxes
 
 import fitz
+import tika
+from tika import parser as tika_parser
 from unstructured.partition.pdf import partition_pdf
 
 
@@ -90,8 +92,18 @@ def extract_tables_unstructured(pdf_path):
     return tables
 
 
-PATH = "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
+def extract_text_tika(pdf_path):
+    """Only text can be extracted without its structure/format (e.g. table) from the PDF file using Tika."""
+    tika.initVM()
+    parsed = tika_parser.from_file(pdf_path, xmlContent=True)
 
+    # print(parsed["content"])
+    # print(parsed["metadata"])
+    return parsed
+
+
+PATH = "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
+# extract_tables_tika(PATH)
 # elements = partition_pdf(
 #     filename=PATH,
 #     infer_table_structure=True,
