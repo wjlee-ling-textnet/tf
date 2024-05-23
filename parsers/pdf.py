@@ -2,6 +2,7 @@ from parsers.image_extract import extract_images_per_page
 from parsers.utilities import get_column_boxes
 
 import fitz
+from unstructured.partition.pdf import partition_pdf
 
 
 def sort_elements_by_bbox(elements: list):
@@ -73,8 +74,43 @@ def extract_elements_per_page(pdf_path, save_dir):
     return pages
 
 
+def extract_tables_unstructured(pdf_path):
+    elements = partition_pdf(
+        filename=PATH,
+        infer_table_structure=True,
+        langauges=["kor", "eng"],
+        extract_images_in_pdf=True,
+        # strategy="hi_res",
+    )
+    tables = []
+    for el in elements:
+        if el.category == "Table":
+            tables.append(el.metadata.text_as_html)
+            # tables.append(el.text)
+    return tables
+
+
+PATH = "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
+
+# elements = partition_pdf(
+#     filename=PATH,
+#     infer_table_structure=True,
+#     langauges=["kor", "eng"],
+#     extract_images_in_pdf=True,
+#     # strategy="hi_res",
+# )
+
+# for el in elements:
+#     if el.category in ["Table"]:
+#         print(el.text)
+#         meta = el.metadata
+#         # print(meta.coordinates)
+#         print(meta.text_as_html)
+#         # print(el.metadata.text_as_html)
+#         print("====================================")
+
 # pages = extract_elements_per_page(
-#     "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf",
+#     PATH,
 #     "images/",
 # )
 # for page in pages:
