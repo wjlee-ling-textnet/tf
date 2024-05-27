@@ -45,14 +45,47 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
 
 
 def extract_elements_per_page(
-    pdf_path, image_config: dict = {}, table_config: dict = {}
-):
+    pdf_path, page: str = "all", image_config: dict = {}, table_config: dict = {}
+) -> list[list]:
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
-    for page_number in range(len(doc)):
+    if page == "all":
+        for page_number in range(len(doc)):
+            page = doc[page_number]
+            # columns = get_column_boxes(page) # 이미지 추출 후에 해야할지??
+
+            # images
+            images, paths = extract_images_per_page(
+                doc, page_number, save_dir=image_config.get("save_dir", "images/")
+            )  # list of tuples
+            images_bbox = [page.get_image_bbox(img) for img in images]
+            images_bbox_with_path = [
+                (*img_bbox, path) for img_bbox, path in zip(images_bbox, paths)
+            ]
+
+            # tables
+            tables = []
+            for table in page.find_tables(
+                strategy=table_config.get("strategy", "lines"),
+                vertical_strategy=table_config.get("vertical_strategy", "text"),
+                horizontal_strategy=table_config.get("horizontal_strategy", "lines"),
+            ):
+                table_info = table.bbox + (table.to_markdown(),)
+                tables.append(table_info)
+                # tables_markdown.append(table.to_markdown())
+
+            # plaintexts
+            texts = page.get_text(option="blocks")  # list of tuples
+            plaintexts = get_plaintexts(texts=texts, tables=tables)
+
+            elements = sort_elements_by_bbox(
+                plaintexts + images_bbox_with_path + tables
+            )
+            pages.append(elements)
+    else:
+        page_number = int(page)
         page = doc[page_number]
-        # columns = get_column_boxes(page) # 이미지 추출 후에 해야할지??
 
         # images
         images, paths = extract_images_per_page(
@@ -80,7 +113,6 @@ def extract_elements_per_page(
 
         elements = sort_elements_by_bbox(plaintexts + images_bbox_with_path + tables)
         pages.append(elements)
-
     return pages
 
 
@@ -143,7 +175,9 @@ if __name__ == "__main__":
     image_config = eval(args.image_config)
 
     if args.fn == "extract_elements_per_page":
-        pages = extract_elements_per_page(args.path, image_config, table_config)
+        pages = extract_elements_per_page(
+            args.path, args.page, image_config, table_config
+        )
         print(pages)
     elif args.fn == "extract_tables_unstructured":
         tables = extract_tables_unstructured(args.path)
