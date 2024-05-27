@@ -3,6 +3,7 @@ from parsers.utilities import get_column_boxes
 
 import fitz
 import tika
+import pdfplumber
 from tika import parser as tika_parser
 from unstructured.partition.pdf import partition_pdf
 
@@ -102,29 +103,15 @@ def extract_text_tika(pdf_path):
     return parsed
 
 
-PATH = "/Users/lwj/workspace/chunky/database/gucheong/금천구청 감사사례집 테스트.pdf"
-# extract_tables_tika(PATH)
-# elements = partition_pdf(
-#     filename=PATH,
-#     infer_table_structure=True,
-#     langauges=["kor", "eng"],
-#     extract_images_in_pdf=True,
-#     # strategy="hi_res",
-# )
-
-# for el in elements:
-#     if el.category in ["Table"]:
-#         print(el.text)
-#         meta = el.metadata
-#         # print(meta.coordinates)
-#         print(meta.text_as_html)
-#         # print(el.metadata.text_as_html)
-#         print("====================================")
-
-# pages = extract_elements_per_page(
-#     PATH,
-#     "images/",
-# )
-# for page in pages:
-#     print(page)
-#     print("====================================")
+def extract_elements_per_page_pdfplumber(pdf_path):
+    with pdfplumber.open(pdf_path) as pdf:
+        for num, page in enumerate(pdf.pages, 1):
+            print(f"Page {num}")
+            table_settings = {
+                "vertical_strategy": "text",
+                "horizontal_strategy": "lines",
+            }
+            tables = page.extract_tables(table_settings)
+            for table in tables:
+                for row in table:
+                    print(row)
