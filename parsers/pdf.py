@@ -44,7 +44,9 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
     return plaintexts
 
 
-def extract_elements_per_page(pdf_path, save_dir, table_config: dict = {}):
+def extract_elements_per_page(
+    pdf_path, image_config: dict = {}, table_config: dict = {}
+):
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
@@ -54,7 +56,7 @@ def extract_elements_per_page(pdf_path, save_dir, table_config: dict = {}):
 
         # images
         images, paths = extract_images_per_page(
-            doc, page_number, save_dir=save_dir
+            doc, page_number, save_dir=image_config.get("save_dir", "images/")
         )  # list of tuples
         images_bbox = [page.get_image_bbox(img) for img in images]
         images_bbox_with_path = [
@@ -64,8 +66,10 @@ def extract_elements_per_page(pdf_path, save_dir, table_config: dict = {}):
         # tables
         tables = []
         for table in page.find_tables(
-            **table_config
-        ):  # default: find_tables(strategy="lines")
+            strategy=table_config.get("strategy", "lines"),
+            vertical_strategy=table_config.get("vertical_strategy", "text"),
+            horizontal_strategy=table_config.get("horizontal_strategy", "lines"),
+        ):
             table_info = table.bbox + (table.to_markdown(),)
             tables.append(table_info)
             # tables_markdown.append(table.to_markdown())
@@ -122,23 +126,32 @@ def extract_elements_per_page_pdfplumber(pdf_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("fn", type=str, help="Function name")
-    parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
-    parser.add_argument("page", type=str, default="all", help="Page number")
-    parser.add_argument("-tc", "--table_config", type=dict, help="Table config")
+    parser.add_argument(
+        "-fn", type=str, default="extract_elements_per_page", help="Function name"
+    )
+    parser.add_argument("path", type=str, help="Path to the PDF file")
+    parser.add_argument("-page", type=str, default="all", help="Page number")
+    parser.add_argument(
+        "-ic", "--image_config", type=str, default="{}", help="Image config"
+    )
+    parser.add_argument(
+        "-tc", "--table_config", type=str, default="{}", help="Table config"
+    )
 
     args = parser.parse_args()
+    table_config = eval(args.table_config)
+    image_config = eval(args.image_config)
 
     if args.fn == "extract_elements_per_page":
-        pages = extract_elements_per_page(args.pdf_path)
+        pages = extract_elements_per_page(args.path, image_config, table_config)
         print(pages)
     elif args.fn == "extract_tables_unstructured":
-        tables = extract_tables_unstructured(args.pdf_path)
+        tables = extract_tables_unstructured(args.path)
         print(tables)
     elif args.fn == "extract_text_tika":
-        parsed = extract_text_tika(args.pdf_path)
+        parsed = extract_text_tika(args.path)
         print(parsed)
     elif args.fn == "extract_elements_per_page_pdfplumber":
-        extract_elements_per_page_pdfplumber(args.pdf_path)
+        extract_elements_per_page_pdfplumber(args.path)
     else:
         print("Invalid function name")
