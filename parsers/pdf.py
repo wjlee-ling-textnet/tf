@@ -1,6 +1,7 @@
 from parsers.image_extract import extract_images_per_page
 from parsers.utilities import get_column_boxes
 
+import sys
 import fitz
 import tika
 import pdfplumber
@@ -115,3 +116,23 @@ def extract_elements_per_page_pdfplumber(pdf_path):
             for table in tables:
                 for row in table:
                     print(row)
+
+
+if __name__ == "__main__":
+    filename = sys.argv[0]
+    function_name = sys.argv[1]
+    arguments = sys.argv[2:]
+
+    if function_name == "extract_elements_per_page":
+        pages = extract_elements_per_page(*arguments)
+        print(pages)
+    elif function_name == "extract_tables_unstructured":
+        tables = extract_tables_unstructured(*arguments)
+        print(tables)
+    elif function_name == "extract_text_tika":
+        parsed = extract_text_tika(*arguments)
+        print(parsed)
+    elif function_name == "extract_elements_per_page_pdfplumber":
+        extract_elements_per_page_pdfplumber(*arguments)
+    else:
+        print("Invalid function name")
