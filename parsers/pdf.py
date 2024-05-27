@@ -66,14 +66,17 @@ def extract_elements_per_page(
 
             # tables
             tables = []
+            table_output_format = table_config.get("output_format", "dataframe")
             for table in page.find_tables(
                 strategy=table_config.get("strategy", "lines"),
                 vertical_strategy=table_config.get("vertical_strategy", "text"),
                 horizontal_strategy=table_config.get("horizontal_strategy", "lines"),
             ):
-                table_info = table.bbox + (table.to_markdown(),)
+                if table_output_format == "dataframe":
+                    table_info = table.bbox + (table.to_pandas(),)
+                elif table_output_format == "markdown":
+                    table_info = table.bbox + (table.to_markdown(),)
                 tables.append(table_info)
-                # tables_markdown.append(table.to_markdown())
 
             # plaintexts
             texts = page.get_text(option="blocks")  # list of tuples
