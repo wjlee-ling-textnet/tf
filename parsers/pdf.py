@@ -51,6 +51,8 @@ def extract_elements_fitz(
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
+    table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
+
     if page == "all":
         for page_number in range(len(doc)):
             page = doc[page_number]
