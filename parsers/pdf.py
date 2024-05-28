@@ -1,4 +1,5 @@
 from parsers.image_extract import extract_images_per_page
+from parsers.tables import extract_tables_per_page
 from parsers.utilities import get_column_boxes
 
 import fitz
@@ -44,7 +45,7 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
     return plaintexts
 
 
-def extract_elements_per_page(
+def extract_elements_fitz(
     pdf_path, page: str = "all", image_config: dict = {}, table_config: dict = {}
 ) -> list[list]:
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
@@ -65,18 +66,7 @@ def extract_elements_per_page(
             ]
 
             # tables
-            tables = []
-            table_output_format = table_config.get("output_format", "dataframe")
-            for table in page.find_tables(
-                strategy=table_config.get("strategy", "lines"),
-                vertical_strategy=table_config.get("vertical_strategy", "text"),
-                horizontal_strategy=table_config.get("horizontal_strategy", "lines"),
-            ):
-                if table_output_format == "dataframe":
-                    table_info = table.bbox + (table.to_pandas(),)
-                elif table_output_format == "markdown":
-                    table_info = table.bbox + (table.to_markdown(),)
-                tables.append(table_info)
+            tables = extract_tables_per_page(page, **table_config)
 
             # plaintexts
             texts = page.get_text(option="blocks")  # list of tuples
@@ -100,15 +90,7 @@ def extract_elements_per_page(
         ]
 
         # tables
-        tables = []
-        for table in page.find_tables(
-            strategy=table_config.get("strategy", "lines"),
-            vertical_strategy=table_config.get("vertical_strategy", "text"),
-            horizontal_strategy=table_config.get("horizontal_strategy", "lines"),
-        ):
-            table_info = table.bbox + (table.to_markdown(),)
-            tables.append(table_info)
-            # tables_markdown.append(table.to_markdown())
+        tables = extract_tables_per_page(page, **table_config)
 
         # plaintexts
         texts = page.get_text(option="blocks")  # list of tuples
@@ -162,7 +144,7 @@ def extract_elements_per_page_pdfplumber(pdf_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-fn", type=str, default="extract_elements_per_page", help="Function name"
+        "-fn", type=str, default="extract_elements_fitz", help="Function name"
     )
     parser.add_argument("path", type=str, help="Path to the PDF file")
     parser.add_argument("-page", type=str, default="all", help="Page number")
@@ -177,10 +159,8 @@ if __name__ == "__main__":
     table_config = eval(args.table_config)
     image_config = eval(args.image_config)
 
-    if args.fn == "extract_elements_per_page":
-        pages = extract_elements_per_page(
-            args.path, args.page, image_config, table_config
-        )
+    if args.fn == "extract_elements_fitz":
+        pages = extract_elements_fitz(args.path, args.page, image_config, table_config)
         print(pages)
     elif args.fn == "extract_tables_unstructured":
         tables = extract_tables_unstructured(args.path)
