@@ -5,6 +5,8 @@ from parsers.utilities import get_column_boxes
 import fitz
 import tika
 import pdfplumber
+from typing import Union
+from pathlib import Path
 from tika import parser as tika_parser
 from unstructured.partition.pdf import partition_pdf
 import argparse
@@ -12,6 +14,25 @@ import argparse
 
 def sort_elements_by_bbox(elements: list):
     return sorted(elements, key=lambda ele: (ele[1], ele[0]))
+
+
+def reconstruct_page_from_elements(elements: list):
+    "Given elements, sorted by their bounding box, reconstruct a page in markdown format by removing the bounding box information."
+    page_content = ""
+    for element in elements:
+        if type(element[4]) == str:
+            page_content += element[4]
+        else:
+            page_content += str(element[4])
+
+        if not page_content.endswith("\n"):
+            page_content += "\n"
+        # page_content += (
+        #     element[4]
+        #     if type(element[4]) == str and not element[4].endswith("\n")
+        #     else element[4]
+        # )
+    return page_content
 
 
 def get_plaintexts(texts: list[tuple], tables: list[tuple]):
@@ -46,12 +67,16 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
 
 
 def extract_elements_fitz(
-    pdf_path, page: str = "all", image_config: dict = {}, table_config: dict = {}
-) -> list[list]:
+    pdf_path,
+    page: Union[str, int] = "all",
+    image_config: dict = {},
+    table_config: dict = {},
+) -> Union[list[tuple], list[list[tuple]]]:
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
-    table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
+    if "file_name" not in table_config:
+        table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
 
     if page == "all":
         for page_number in range(len(doc)):
@@ -78,6 +103,7 @@ def extract_elements_fitz(
                 plaintexts + images_bbox_with_path + tables
             )
             pages.append(elements)
+        return pages
     else:
         page_number = int(page)
         page = doc[page_number]
@@ -99,8 +125,29 @@ def extract_elements_fitz(
         plaintexts = get_plaintexts(texts=texts, tables=tables)
 
         elements = sort_elements_by_bbox(plaintexts + images_bbox_with_path + tables)
-        pages.append(elements)
-    return pages
+        return elements
+
+
+def parse_pdf_fitz(pdf_path, save_dir=None, image_config={}, table_config={}):
+    doc = fitz.open(pdf_path)
+    table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
+    if save_dir is None:
+        save_dir = Path(table_config["file_name"].replace(" ", "_"))
+    else:
+        save_dir = Path(save_dir)
+    if not save_dir.exists():
+        save_dir.mkdir(parents=True)
+
+    for page_number in range(len(doc)):
+        elements = extract_elements_fitz(
+            pdf_path,
+            page=page_number,
+            image_config=image_config,
+            table_config=table_config,
+        )
+        page_content = reconstruct_page_from_elements(elements)
+        with open(save_dir / f"page_{page_number+1}.md", "w") as f:
+            f.write(page_content)
 
 
 def extract_tables_unstructured(pdf_path):
@@ -164,13 +211,22 @@ if __name__ == "__main__":
     if args.fn == "extract_elements_fitz":
         pages = extract_elements_fitz(args.path, args.page, image_config, table_config)
         print(pages)
+
+    elif args.fn == "parse_pdf_fitz":
+        pages = parse_pdf_fitz(
+            args.path, image_config=image_config, table_config=table_config
+        )
+
     elif args.fn == "extract_tables_unstructured":
         tables = extract_tables_unstructured(args.path)
         print(tables)
+
     elif args.fn == "extract_text_tika":
         parsed = extract_text_tika(args.path)
         print(parsed)
+
     elif args.fn == "extract_elements_per_page_pdfplumber":
         extract_elements_per_page_pdfplumber(args.path)
+
     else:
         print("Invalid function name")
