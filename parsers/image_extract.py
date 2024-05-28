@@ -20,11 +20,11 @@ def extract_images(pdf_path):
     return images
 
 
-def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
+def extract_images_per_page(doc, page_number, output_dir: str = "images/"):
     page = doc[page_number]
-    save_dir_path = Path(save_dir)
-    if not save_dir_path.exists():
-        save_dir_path.mkdir()
+    output_dir = Path(output_dir)
+    if not output_dir.exists():
+        output_dir.mkdir()
 
     # Extract images
     images = page.get_images(full=True)
@@ -38,9 +38,7 @@ def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
         image_ext = base_image["ext"]  # The image file extension
 
         # Write the image to a file
-        image_save_path = (
-            save_dir_path / f"image_{page_number+1}_{img_index}.{image_ext}"
-        )
+        image_save_path = output_dir / f"image_{page_number+1}_{img_index}.{image_ext}"
         with image_save_path.open("wb") as img_file:
             img_file.write(image_bytes)
 
@@ -49,7 +47,7 @@ def extract_images_per_page(doc, page_number, save_dir: str = "images/"):
         # images[img_index - 1] = (*img[:4], image_save_path, *img[5:])
         paths.append(image_save_path)
 
-    print(f"Saved {len(images)} image(s) to {save_dir_path._str}")
+    print(f"Saved {len(images)} image(s) to {output_dir._str}")
     return images, paths
 
 

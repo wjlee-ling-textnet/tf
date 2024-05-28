@@ -68,6 +68,8 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
 
 def extract_elements_fitz(
     pdf_path,
+    *,
+    save_dir: Path,
     page: Union[str, int] = "all",
     image_config: dict = {},
     table_config: dict = {},
@@ -75,8 +77,9 @@ def extract_elements_fitz(
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
-    if "file_name" not in table_config:
-        table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
+    # table_config["output_dir"] = save_dir / table_config.get("output_dir", "tables/")
+    table_save_dir = save_dir / table_config.get("output_dir", "tables/")
+    image_save_dir = save_dir / image_config.get("output_dir", "images/")
 
     if page == "all":
         for page_number in range(len(doc)):
@@ -84,8 +87,9 @@ def extract_elements_fitz(
             # columns = get_column_boxes(page) # 이미지 추출 후에 해야할지??
 
             # images
+
             images, paths = extract_images_per_page(
-                doc, page_number, save_dir=image_config.get("save_dir", "images/")
+                doc, page_number, output_dir=image_save_dir
             )  # list of tuples
             images_bbox = [page.get_image_bbox(img) for img in images]
             images_bbox_with_path = [
@@ -93,7 +97,9 @@ def extract_elements_fitz(
             ]
 
             # tables
-            tables = extract_tables_per_page(page, **table_config)
+            tables = extract_tables_per_page(
+                page, **table_config, output_dir=table_save_dir
+            )
 
             # plaintexts
             texts = page.get_text(option="blocks")  # list of tuples
@@ -110,7 +116,7 @@ def extract_elements_fitz(
 
         # images
         images, paths = extract_images_per_page(
-            doc, page_number, save_dir=image_config.get("save_dir", "images/")
+            doc, page_number, output_dir=image_save_dir
         )  # list of tuples
         images_bbox = [page.get_image_bbox(img) for img in images]
         images_bbox_with_path = [
@@ -118,7 +124,9 @@ def extract_elements_fitz(
         ]
 
         # tables
-        tables = extract_tables_per_page(page, **table_config)
+        tables = extract_tables_per_page(
+            page, **table_config, output_dir=table_save_dir
+        )
 
         # plaintexts
         texts = page.get_text(option="blocks")  # list of tuples
@@ -130,9 +138,9 @@ def extract_elements_fitz(
 
 def parse_pdf_fitz(pdf_path, save_dir=None, image_config={}, table_config={}):
     doc = fitz.open(pdf_path)
-    table_config["file_name"] = pdf_path.split("/")[-1].split(".")[0]
+    file_name = pdf_path.split("/")[-1].split(".")[0].replace(" ", "_")
     if save_dir is None:
-        save_dir = Path(table_config["file_name"].replace(" ", "_"))
+        save_dir = Path(file_name)
     else:
         save_dir = Path(save_dir)
     if not save_dir.exists():
@@ -144,6 +152,7 @@ def parse_pdf_fitz(pdf_path, save_dir=None, image_config={}, table_config={}):
             page=page_number,
             image_config=image_config,
             table_config=table_config,
+            save_dir=save_dir,
         )
         page_content = reconstruct_page_from_elements(elements)
         with open(save_dir / f"page_{page_number+1}.md", "w") as f:

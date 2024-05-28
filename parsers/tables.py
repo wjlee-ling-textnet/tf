@@ -31,8 +31,8 @@ def extract_tables_per_page(
             if type(output_dir) is str:
                 output_dir = Path(output_dir)
             if not output_dir.exists():
-                output_dir.mkdir(parents=True)
-            save_path = output_dir / f"{page.number}_{idx+1}.csv"
+                output_dir.mkdir()
+            save_path = output_dir / f"{page.number+1}_{idx+1}.csv"
             table_df = table.to_pandas()
             table_df.to_csv(save_path, index=False)
             table_info = table.bbox + (save_path,)  # table.bbox + (table_df,)
