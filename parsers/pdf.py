@@ -17,9 +17,9 @@ def sort_elements_by_bbox(elements: list):
 
 
 def _create_hyperlink(element):
-    table_formats = (".csv", ".tsv", ".xlsx")
-    image_formats = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
-    if element.endswith(table_formats) or element.endswith(image_formats):
+    table_extensions = (".csv", ".tsv", ".xlsx")
+    image_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
+    if element.endswith(table_extensions) or element.endswith(image_extensions):
         element = (
             "/".join(element.split("/")[1:])
             if element.startswith("sample/")
