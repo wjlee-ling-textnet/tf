@@ -16,36 +16,35 @@ def sort_elements_by_bbox(elements: list):
     return sorted(elements, key=lambda ele: (ele[1], ele[0]))
 
 
-def _create_hyperlink(element):
+def _create_hyperlink(element, save_root_dir: Path):
     table_extensions = (".csv", ".tsv", ".xlsx")
     image_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
     if element.endswith(table_extensions) or element.endswith(image_extensions):
-        element = (
-            "/".join(element.split("/")[1:])
-            if element.startswith("sample/")
-            else element
-        )
+        element = element.lstrip(save_root_dir.__str__()).lstrip("/")
+        # element = (
+        #     "/".join(element.split("/")[1:])
+        #     if element.startswith("sample/")
+        #     else element
+        # )
         return f"[{element}]({element})"
     else:
         return element
 
 
-def reconstruct_page_from_elements(elements: list):
+def reconstruct_page_from_elements(elements: list, save_root_dir: Path):
     "Given elements, sorted by their bounding box, reconstruct a page in markdown format by removing the bounding box information."
     page_content = ""
     for element in elements:
         if type(element[4]) == str:
-            page_content += _create_hyperlink(element[4])
+            page_content += element[4]
         else:
-            page_content += _create_hyperlink(str(element[4]))
+            page_content += _create_hyperlink(
+                str(element[4]), save_root_dir=save_root_dir
+            )
 
         if not page_content.endswith("\n"):
             page_content += "\n"
-        # page_content += (
-        #     element[4]
-        #     if type(element[4]) == str and not element[4].endswith("\n")
-        #     else element[4]
-        # )
+
     return page_content
 
 
@@ -167,7 +166,9 @@ def parse_pdf_fitz(pdf_path, save_root_dir=None, image_config={}, table_config={
             table_config=table_config,
             save_root_dir=save_root_dir,
         )
-        page_content = reconstruct_page_from_elements(elements)
+        page_content = reconstruct_page_from_elements(
+            elements, save_root_dir=save_root_dir
+        )
         with open(save_root_dir / f"page_{page_number+1}.md", "w") as f:
             f.write(page_content)
 
