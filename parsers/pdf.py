@@ -20,6 +20,11 @@ def _create_hyperlink(element):
     table_formats = (".csv", ".tsv", ".xlsx")
     image_formats = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
     if element.endswith(table_formats) or element.endswith(image_formats):
+        element = (
+            "/".join(element.split("/")[1:])
+            if element.startswith("sample/")
+            else element
+        )
         return f"[{element}]({element})"
     else:
         return element
@@ -78,7 +83,7 @@ def get_plaintexts(texts: list[tuple], tables: list[tuple]):
 def extract_elements_fitz(
     pdf_path,
     *,
-    save_dir: Path,
+    save_root_dir: Path,
     page: Union[str, int] = "all",
     image_config: dict = {},
     table_config: dict = {},
@@ -86,9 +91,8 @@ def extract_elements_fitz(
     """Extract plain text, images and tables from each page **in order** from a PDF file. Each element has the content (text, image, or table im markdown) as its 5th element, like the .get_text method."""
     doc = fitz.open(pdf_path)
     pages = []
-    # table_config["output_dir"] = save_dir / table_config.get("output_dir", "tables/")
-    table_save_dir = save_dir / table_config.get("output_dir", "tables/")
-    image_save_dir = save_dir / image_config.get("output_dir", "images/")
+    table_save_dir = save_root_dir / table_config.get("output_dir", "tables/")
+    image_save_dir = save_root_dir / image_config.get("output_dir", "images/")
 
     if page == "all":
         for page_number in range(len(doc)):
@@ -145,15 +149,15 @@ def extract_elements_fitz(
         return elements
 
 
-def parse_pdf_fitz(pdf_path, save_dir=None, image_config={}, table_config={}):
+def parse_pdf_fitz(pdf_path, save_root_dir=None, image_config={}, table_config={}):
     doc = fitz.open(pdf_path)
     file_name = pdf_path.split("/")[-1].split(".")[0].replace(" ", "_")
-    if save_dir is None:
-        save_dir = Path(file_name)
+    if save_root_dir is None:
+        save_root_dir = Path(file_name)
     else:
-        save_dir = Path(save_dir)
-    if not save_dir.exists():
-        save_dir.mkdir(parents=True)
+        save_root_dir = Path(save_root_dir)
+    if not save_root_dir.exists():
+        save_root_dir.mkdir(parents=True)
 
     for page_number in range(len(doc)):
         elements = extract_elements_fitz(
@@ -161,10 +165,10 @@ def parse_pdf_fitz(pdf_path, save_dir=None, image_config={}, table_config={}):
             page=page_number,
             image_config=image_config,
             table_config=table_config,
-            save_dir=save_dir,
+            save_root_dir=save_root_dir,
         )
         page_content = reconstruct_page_from_elements(elements)
-        with open(save_dir / f"page_{page_number+1}.md", "w") as f:
+        with open(save_root_dir / f"page_{page_number+1}.md", "w") as f:
             f.write(page_content)
 
 
@@ -214,6 +218,7 @@ if __name__ == "__main__":
         "-fn", type=str, default="extract_elements_fitz", help="Function name"
     )
     parser.add_argument("path", type=str, help="Path to the PDF file")
+    parser.add_argument("-save_dir", type=str, help="Path to the root save directory")
     parser.add_argument("-page", type=str, default="all", help="Page number")
     parser.add_argument(
         "-ic", "--image_config", type=str, default="{}", help="Image config"
