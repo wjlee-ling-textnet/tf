@@ -16,14 +16,23 @@ def sort_elements_by_bbox(elements: list):
     return sorted(elements, key=lambda ele: (ele[1], ele[0]))
 
 
+def _create_hyperlink(element):
+    table_formats = (".csv", ".tsv", ".xlsx")
+    image_formats = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
+    if element.endswith(table_formats) or element.endswith(image_formats):
+        return f"[{element}]({element})"
+    else:
+        return element
+
+
 def reconstruct_page_from_elements(elements: list):
     "Given elements, sorted by their bounding box, reconstruct a page in markdown format by removing the bounding box information."
     page_content = ""
     for element in elements:
         if type(element[4]) == str:
-            page_content += element[4]
+            page_content += _create_hyperlink(element[4])
         else:
-            page_content += str(element[4])
+            page_content += _create_hyperlink(str(element[4]))
 
         if not page_content.endswith("\n"):
             page_content += "\n"
