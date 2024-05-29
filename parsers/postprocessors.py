@@ -25,10 +25,10 @@ def _replace_link_with_contents(
             df = pd.read_excel(path)
 
         if output_format == "markdown":
-            output = df.to_markdown()
+            output = df.to_markdown(index=False)
             return output
         elif output_format == "html":
-            output = df.to_html()
+            output = df.to_html(index=False)
             return output
 
     return element
