@@ -1,4 +1,5 @@
 import re
+import argparse
 import pandas as pd
 from pathlib import Path
 
@@ -59,4 +60,25 @@ def postprocess_pages(
     print("🤖", "Finished binding pages.")
 
 
-postprocess_pages("sample/", "output/")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "path", type=str, help="Path of the directory of parsed results"
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="output",
+        help="Output directory for the postprocessed files",
+    )
+    parser.add_argument(
+        "--output_format",
+        type=str,
+        default="markdown",
+        help="Output format for the postprocessed files",
+    )
+
+    args = parser.parse_args()
+    postprocess_pages(
+        args.path, output_dir=args.output_dir, output_format=args.output_format
+    )
