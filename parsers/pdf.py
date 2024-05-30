@@ -83,7 +83,7 @@ def extract_elements_fitz(
     pdf_path,
     *,
     save_root_dir: Path,
-    page: Union[str, int] = "all",
+    page_range: Union[str, int] = "all",
     image_config: dict = {},
     table_config: dict = {},
 ) -> Union[list[tuple], list[list[tuple]]]:
@@ -93,7 +93,7 @@ def extract_elements_fitz(
     table_save_dir = save_root_dir / table_config.get("output_dir", "tables/")
     image_save_dir = save_root_dir / image_config.get("output_dir", "images/")
 
-    if page == "all":
+    if page_range == "all":
         for page_number in range(len(doc)):
             page = doc[page_number]
             # columns = get_column_boxes(page) # 이미지 추출 후에 해야할지??
@@ -123,7 +123,7 @@ def extract_elements_fitz(
             pages.append(elements)
         return pages
     else:
-        page_number = int(page)
+        page_number = int(page_range)
         page = doc[page_number]
 
         # images
@@ -148,7 +148,9 @@ def extract_elements_fitz(
         return elements
 
 
-def parse_pdf_fitz(pdf_path, save_root_dir=None, image_config={}, table_config={}):
+def parse_pdf_fitz(
+    pdf_path, *, page_range=None, save_root_dir=None, image_config={}, table_config={}
+):
     doc = fitz.open(pdf_path)
     file_name = pdf_path.split("/")[-1].split(".")[0].replace(" ", "_")
     if save_root_dir is None:
@@ -158,10 +160,23 @@ def parse_pdf_fitz(pdf_path, save_root_dir=None, image_config={}, table_config={
     if not save_root_dir.exists():
         save_root_dir.mkdir(parents=True)
 
-    for page_number in range(len(doc)):
+    if page_range is None or page_range == "all":
+        start_idx, end_idx = 0, len(doc)
+    else:
+        if "-" in page_range:
+            start_idx, end_idx = map(int, page_range.split("-"))
+            start_idx -= 1
+        else:
+            start_idx, end_idx = int(page_range) - 1, int(page_range)
+
+    assert start_idx <= end_idx, "Invalid page range"
+    assert end_idx <= len(doc), "Invalid page range"
+    assert start_idx >= 0, "Invalid page range"
+
+    for page_number in range(start_idx, end_idx):
         elements = extract_elements_fitz(
             pdf_path,
-            page=page_number,
+            page_range=page_number,
             image_config=image_config,
             table_config=table_config,
             save_root_dir=save_root_dir,
@@ -220,7 +235,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("path", type=str, help="Path to the PDF file")
     parser.add_argument("-save_dir", type=str, help="Path to the root save directory")
-    parser.add_argument("-page", type=str, default="all", help="Page number")
+    parser.add_argument("-page_range", type=str, default="all", help="Page number")
     parser.add_argument(
         "-ic", "--image_config", type=str, default="{}", help="Image config"
     )
@@ -233,12 +248,17 @@ if __name__ == "__main__":
     image_config = eval(args.image_config)
 
     if args.fn == "extract_elements_fitz":
-        pages = extract_elements_fitz(args.path, args.page, image_config, table_config)
+        pages = extract_elements_fitz(
+            args.path, args.page_range, image_config, table_config
+        )
         print(pages)
 
     elif args.fn == "parse_pdf_fitz":
         pages = parse_pdf_fitz(
-            args.path, image_config=image_config, table_config=table_config
+            args.path,
+            page_range=args.page_range,
+            image_config=image_config,
+            table_config=table_config,
         )
 
     elif args.fn == "extract_tables_unstructured":
