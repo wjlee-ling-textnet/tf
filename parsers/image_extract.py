@@ -47,7 +47,7 @@ def extract_images_per_page(doc, page_number, output_dir: str = "images/"):
         # images[img_index - 1] = (*img[:4], image_save_path, *img[5:])
         paths.append(image_save_path)
 
-    print(f"Saved {len(images)} image(s) to {output_dir._str}")
+    # print(f"Saved {len(images)} image(s) to {output_dir._str}")
     return images, paths
 
 
