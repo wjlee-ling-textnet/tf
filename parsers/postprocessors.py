@@ -38,10 +38,12 @@ def _replace_link_with_contents(
 def postprocess_pages(
     root_dir: str, output_dir: str = "output", output_format="markdown"
 ):
+    _MAPPING = {"markdown": ".md", "html": ".html"}
+
     root_dir = Path(root_dir)
     output_dir = root_dir / output_dir
     for p in root_dir.iterdir():
-        if not p.is_dir():
+        if not p.is_dir() and p.suffix == _MAPPING[output_format]:
             new_page = []
             with p.open("r", encoding="utf-8") as f:
                 page = f.readlines()
