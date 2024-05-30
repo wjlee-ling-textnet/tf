@@ -2,14 +2,16 @@ from parsers.image_extract import extract_images_per_page
 from parsers.tables import extract_tables_per_page
 from parsers.utilities import get_column_boxes
 
+import argparse
 import fitz
 import tika
 import pdfplumber
 from typing import Union
 from pathlib import Path
 from tika import parser as tika_parser
-from unstructured.partition.pdf import partition_pdf
-import argparse
+from tqdm import tqdm
+
+# from unstructured.partition.pdf import partition_pdf
 
 
 def sort_elements_by_bbox(elements: list):
@@ -171,9 +173,11 @@ def parse_pdf_fitz(
 
     assert start_idx <= end_idx, "Invalid page range"
     assert end_idx <= len(doc), "Invalid page range"
+    if start_idx < 0:
+        start_idx = 0
     assert start_idx >= 0, "Invalid page range"
 
-    for page_number in range(start_idx, end_idx):
+    for page_number in tqdm(range(start_idx, end_idx)):
         elements = extract_elements_fitz(
             pdf_path,
             page_range=page_number,
@@ -188,20 +192,20 @@ def parse_pdf_fitz(
             f.write(page_content)
 
 
-def extract_tables_unstructured(pdf_path):
-    elements = partition_pdf(
-        filename=pdf_path,
-        infer_table_structure=True,
-        langauges=["kor", "eng"],
-        extract_images_in_pdf=True,
-        # strategy="hi_res",
-    )
-    tables = []
-    for el in elements:
-        if el.category == "Table":
-            tables.append(el.metadata.text_as_html)
-            # tables.append(el.text)
-    return tables
+# def extract_tables_unstructured(pdf_path):
+#     elements = partition_pdf(
+#         filename=pdf_path,
+#         infer_table_structure=True,
+#         langauges=["kor", "eng"],
+#         extract_images_in_pdf=True,
+#         # strategy="hi_res",
+#     )
+#     tables = []
+#     for el in elements:
+#         if el.category == "Table":
+#             tables.append(el.metadata.text_as_html)
+#             # tables.append(el.text)
+#     return tables
 
 
 def extract_text_tika(pdf_path):
