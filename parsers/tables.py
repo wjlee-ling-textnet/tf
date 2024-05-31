@@ -34,7 +34,11 @@ def extract_tables_per_page(
                 output_dir.mkdir()
             save_path = output_dir / f"{page.number+1}_{idx+1}.csv"
             table_df = table.to_pandas()
-            table_df.to_csv(save_path, index=False)
+            table_df.to_csv(
+                save_path,
+                index=False,
+                escapechar="\\",
+            )
             table_info = table.bbox + (save_path,)  # table.bbox + (table_df,)
         elif output_format == "markdown":
             table_info = table.bbox + (table.to_markdown(),)
