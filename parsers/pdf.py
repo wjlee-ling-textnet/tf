@@ -234,10 +234,10 @@ def extract_elements_per_page_pdfplumber(pdf_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("path", type=str, help="Path to the PDF file")
     parser.add_argument(
         "-fn", "--function", type=str, default="parse_pdf_fitz", help="Function name"
     )
-    parser.add_argument("path", type=str, help="Path to the PDF file")
     parser.add_argument("--save_dir", type=str, help="Path to the root save directory")
     parser.add_argument("--page_range", type=str, default="all", help="Page number")
     parser.add_argument(
