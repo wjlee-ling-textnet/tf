@@ -4,17 +4,19 @@
 
 ### 1. Parse and extract elements
 
-`python -m parsers.pdf [pdf_path] -fn=parse_pdf_fitz -save_dir=[저장 경로] -tc={'output_format':'csv'}`
+`python -m parsers.pdf [pdf_path]`
+`python -m parsers.pdf [pdf_path] -fn=parse_pdf_fitz --save_dir=[저장 경로] --page_range=all -tc="{'output_format':'csv', 'strategy':'lines'}"`
 
 #### arguments
 
+- `path` (mandatory)
 - `-fn:` function (parser) to use
 
   - `parse_pdf_fitz` only for now
 
-- `-save_dir`: save path
-- `-page`
-  - `all`
+- `--save_dir`: save path
+- `--page_range`
+  - `all` (default)
   - page number: e.g. `3`
   - range: e.g.`1-5`
 - `-ic` (`--image_config`)
