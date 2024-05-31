@@ -251,13 +251,13 @@ if __name__ == "__main__":
     table_config = eval(args.table_config)
     image_config = eval(args.image_config)
 
-    if args.fn == "extract_elements_fitz":
+    if args.function == "extract_elements_fitz":
         pages = extract_elements_fitz(
             args.path, args.page_range, image_config, table_config
         )
         print(pages)
 
-    elif args.fn == "parse_pdf_fitz":
+    elif args.function == "parse_pdf_fitz":
         pages = parse_pdf_fitz(
             args.path,
             page_range=args.page_range,
@@ -265,15 +265,15 @@ if __name__ == "__main__":
             table_config=table_config,
         )
 
-    elif args.fn == "extract_tables_unstructured":
+    elif args.function == "extract_tables_unstructured":
         tables = extract_tables_unstructured(args.path)
         print(tables)
 
-    elif args.fn == "extract_text_tika":
+    elif args.function == "extract_text_tika":
         parsed = extract_text_tika(args.path)
         print(parsed)
 
-    elif args.fn == "extract_elements_per_page_pdfplumber":
+    elif args.function == "extract_elements_per_page_pdfplumber":
         extract_elements_per_page_pdfplumber(args.path)
 
     else:
