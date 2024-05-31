@@ -5,7 +5,7 @@ from typing import Union
 def extract_tables_per_page(
     page,
     *,
-    output_format: str = "dataframe",
+    output_format: str = "csv",
     output_dir: Union[str, Path] = "tables/",
     strategy: str = "lines",
     vertical_strategy: str = None,
@@ -20,6 +20,8 @@ def extract_tables_per_page(
     if horizontal_strategy:
         # 세로줄을 기준으로
         strategies["horizontal_strategy"] = horizontal_strategy
+
+    ## defaults setting
     if strategies == {}:
         strategies["strategy"] = strategy
 
