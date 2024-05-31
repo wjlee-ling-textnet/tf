@@ -4,3 +4,4 @@ database/
 **/*.DS_store
 **/__pycache__/
 **/images/
+parsed/
