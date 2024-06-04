@@ -1,5 +1,6 @@
 import streamlit as st
 import pdfplumber
+import tabula
 from PIL import Image, ImageDraw
 from streamlit import experimental_rerun
 from streamlit_drawable_canvas import st_canvas
@@ -82,20 +83,16 @@ if uploaded_file is not None:
 
             canvas_result = adjust_box(im, boxes[0])
             st.session_state.table_boxes = [
-                (box["x1"], box["y1"], box["x2"], box["y2"])
+                (
+                    box["left"],
+                    box["top"],
+                    box["left"] + box["width"],
+                    box["top"] + box["height"],
+                )
                 for box in canvas_result.json_data["objects"]
             ]
 
             print(canvas_result.json_data["objects"])
-            # print(canvas_result.json_data["shapes"])
-            """
-            [{'type': 'rect', 'version': '4.4.0', 'originX': 'left', 'originY': 'top', 'left': 68, 'top': 356, 'width': 192, 'height': 79, 'fill': 'rgba(255, 165, 0, 0.3)', 'stroke': 'blue', 'strokeWidth': 2, 'strokeDashArray': None, 'strokeLineCap': 'butt', 'strokeDashOffset': 0, 'strokeLineJoin': 'miter', 'strokeUniform': True, 'strokeMiterLimit': 4, 'scaleX': 1, 'scaleY': 1, 'angle': 0, 'flipX': False, 'flipY': False, 'opacity': 1, 'shadow': None, 'visible': True, 'backgroundColor': '', 'fillRule': 'nonzero', 'paintFirst': 'fill', 'globalCompositeOperation': 'source-over', 'skewX': 0, 'skewY': 0, 'rx': 0, 'ry': 0}]
-            """
-            # if canvas_result.json_data:
-            #     st.session_state.table_boxes = [
-            #         (shape["x1"], shape["y1"], shape["x2"], shape["y2"])
-            #         for shape in canvas_result.json_data["shapes"]
-            #     ]
 
             if st.sidebar.button("Retry Table Detection in Annotated Areas"):
                 new_boxes = []
@@ -139,25 +136,34 @@ if uploaded_file is not None:
                     box["top"],
                     box["left"] + box["width"],
                     box["top"] + box["height"],
-                )  # 'left': 67, 'top': 135, 'width': 466, 'height': 622,
-                for box in canvas_result.json_data["objects"]
+                )
+                for box in canvas_result.json_data["objects"]  ## 🍎🍎
             ]
+            print("🩷 canvas:", canvas_result.json_data["objects"])
 
+            ## Tabula
             if st.sidebar.button("Retry Table Detection in Annotated Areas"):
                 new_boxes = []
                 for box in st.session_state.table_boxes:
-                    cropped_page = page.within_bbox(box)
-                    new_tables = cropped_page.extract_table()
-                    for table in new_tables:
-                        new_boxes.append(table.bbox)
-                print("🩷", new_boxes)
-                st.session_state.table_boxes = new_boxes
-                updated_image = draw_boxes(im.original, new_boxes, color="green")
-                st.image(
-                    updated_image,
-                    caption="Updated Table Edges",
-                    use_column_width=True,
-                )
+
+                    # pdfplumber: (left, top, right, bottom) => tabula: (top, left, bottom, right)
+                    df = tabula.read_pdf(
+                        uploaded_file,
+                        area=[box[1], box[0], box[3], box[2]],
+                        pages=2,
+                        multiple_tables=False,
+                        stream=True,
+                    )
+
+                # st.session_state.table_boxes = new_boxes
+                st.session_state.page_preview = draw_boxes(
+                    im.original, st.session_state.table_boxes, color="green"
+                )  # https://github.com/jsvine/pdfplumber/tree/stable
+                # st.image(
+                #     updated_image,
+                #     caption="Updated Table Edges",
+                #     use_column_width=True,
+                # )
 
                 st.sidebar.markdown("### Updated Bounding Boxes")
                 for box in st.session_state.table_boxes:
