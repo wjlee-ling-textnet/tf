@@ -57,6 +57,28 @@ def adjust_box(page_image, box=None):
     return canvas_result
 
 
+# def adjust_replace_box(page_image):
+#     st.session_state["table_to_edit_idx"] = st.session_state.table_boxes.index(
+#         st.session_state.table_to_edit
+#     )
+#     # canvas로 수정
+#     canvas_result = adjust_box(
+#         page_image,
+#         st.session_state.table_boxes[st.session_state.table_to_edit_idx],
+#     )
+#     if canvas_result.json_data["objects"]:
+#         new_box = canvas_result.json_data["objects"][0]
+#         st.session_state.table_boxes[st.session_state.table_to_edit_idx] = (
+#             new_box["left"],
+#             new_box["top"],
+#             new_box["left"] + new_box["width"],
+#             new_box["top"] + new_box["height"],
+#         )
+#         st.sidebar.write(
+#             st.session_state.table_boxes[st.session_state.table_to_edit_idx]
+#         )
+
+
 st.title("PDF Table Edge Detection Adjustment")
 uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
@@ -95,11 +117,16 @@ if uploaded_file is not None:
 
                 st.rerun()
         else:
-            # 수정
+            # 테이블 수정
             if st.sidebar.button("테이블 수정 및 제거") or st.session_state.editor_mode:
                 st.session_state.editor_mode = True
                 table_to_edit = st.sidebar.radio(
-                    "Select Table to Edit", st.session_state.table_boxes
+                    "Select Table to Edit",
+                    st.session_state.table_boxes,
+                    key="table_to_edit",
+                    index=None,
+                    # on_change=st.rerun,
+                    # args=(im,),
                 )
                 if table_to_edit:
                     st.session_state["table_to_edit_idx"] = (
@@ -113,8 +140,12 @@ if uploaded_file is not None:
                             st.session_state.table_to_edit_idx
                         ],
                     )
-                    if canvas_result.json_data["objects"]:
+
+                    if canvas_result.json_data is not None and len(
+                        canvas_result.json_data["objects"]
+                    ):
                         new_box = canvas_result.json_data["objects"][0]
+                        print(new_box)
                         st.session_state.table_boxes[
                             st.session_state.table_to_edit_idx
                         ] = (
@@ -134,9 +165,8 @@ if uploaded_file is not None:
                             st.session_state.page_preview = draw_boxes(
                                 im.original,
                                 st.session_state.table_boxes,
-                                color="blue",
+                                color="red",
                             )
-                            st.rerun()
 
                 # new_boxes = []
                 # for box in st.session_state.table_boxes:
