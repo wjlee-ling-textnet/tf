@@ -8,13 +8,16 @@ from streamlit_drawable_canvas import st_canvas
 
 if "table_boxes" not in st.session_state:
     st.session_state.table_boxes = None
+    st.session_state.table_changes = None
     st.session_state.editor_mode = False
+    st.session_state.page_idx = 0
 
 
-def draw_boxes(image, boxes, color="red"):
-    draw = ImageDraw.Draw(image)
-    for box in boxes:
-        draw.rectangle(box, outline=color, width=2)
+def draw_boxes(image, boxes: list, color="blue"):
+    if boxes is not None:
+        draw = ImageDraw.Draw(image)
+        for box in boxes:
+            draw.rectangle(box, outline=color, width=2)
     return image
 
 
@@ -26,7 +29,7 @@ def adjust_box(page_image, box=None):
     kwargs = {
         "fill_color": "rgba(255, 165, 0, 0.3)",
         "stroke_width": 2,
-        "stroke_color": "blue",
+        "stroke_color": "green",
         "background_image": canvas_image,
         "update_streamlit": True,
         "height": im_pil.height,
@@ -63,56 +66,98 @@ if uploaded_file is not None:
     with pdfplumber.open(uploaded_file) as pdf:
         # for idx, page in enumerate(pdf.pages):
 
-        page = pdf.pages[1]
+        page = pdf.pages[0]
         im = page.to_image()
 
         if "page_preview" not in st.session_state:
             # 🍎 PAGE 넘어갈 때마다 RESET
             st.session_state.page_preview = im.original
+            st.session_state.table_boxes = []
 
         st.image(
             st.session_state.page_preview,
-            caption="Original",
+            caption="page preview",
             use_column_width=True,
         )
 
-        detected_tables = page.find_tables()
-        if detected_tables:
-            boxes = [(table.bbox) for table in detected_tables]
-            st.session_state.page_preview = draw_boxes(im.original, boxes)
+        if st.session_state.table_boxes == []:
+            if st.sidebar.button("테이블 추출"):
+                detected_tables = page.find_tables()
+                if detected_tables:
+                    st.session_state.table_boxes = [
+                        (table.bbox) for table in detected_tables
+                    ]
+                    st.session_state.page_preview = draw_boxes(
+                        im.original,
+                        st.session_state.table_boxes,
+                        color="blue",
+                    )
 
-            canvas_result = adjust_box(im, boxes[0])
-            st.session_state.table_boxes = [
-                (
-                    box["left"],
-                    box["top"],
-                    box["left"] + box["width"],
-                    box["top"] + box["height"],
+                st.rerun()
+        else:
+            # 수정
+            if st.sidebar.button("테이블 수정 및 제거") or st.session_state.editor_mode:
+                st.session_state.editor_mode = True
+                table_to_edit = st.sidebar.radio(
+                    "Select Table to Edit", st.session_state.table_boxes
                 )
-                for box in canvas_result.json_data["objects"]
-            ]
+                if table_to_edit:
+                    st.session_state["table_to_edit_idx"] = (
+                        st.session_state.table_boxes.index(table_to_edit)
+                    )
 
-            print(canvas_result.json_data["objects"])
+                    # canvas로 수정
+                    canvas_result = adjust_box(
+                        im,
+                        st.session_state.table_boxes[
+                            st.session_state.table_to_edit_idx
+                        ],
+                    )
+                    if canvas_result.json_data["objects"]:
+                        new_box = canvas_result.json_data["objects"][0]
+                        st.session_state.table_boxes[
+                            st.session_state.table_to_edit_idx
+                        ] = (
+                            new_box["left"],
+                            new_box["top"],
+                            new_box["left"] + new_box["width"],
+                            new_box["top"] + new_box["height"],
+                        )
+                        st.sidebar.write(
+                            st.session_state.table_boxes[
+                                st.session_state.table_to_edit_idx
+                            ]
+                        )
 
-            if st.sidebar.button("Retry Table Detection in Annotated Areas"):
-                new_boxes = []
-                for box in st.session_state.table_boxes:
-                    cropped_page = page.within_bbox(box)
-                    new_tables = cropped_page.find_tables()
-                    for table in new_tables:
-                        new_boxes.append(table.bbox)
+                        if st.sidebar.button("Done"):
+                            st.session_state.editor_mode = False
+                            st.session_state.page_preview = draw_boxes(
+                                im.original,
+                                st.session_state.table_boxes,
+                                color="blue",
+                            )
+                            st.rerun()
 
-                st.session_state.table_boxes = new_boxes
-                updated_image = draw_boxes(im.original, new_boxes, color="blue")
-                st.image(
-                    updated_image,
-                    caption="Updated Table Edges",
-                    use_column_width=True,
-                )
+                # new_boxes = []
+                # for box in st.session_state.table_boxes:
+                #     cropped_page = page.within_bbox(box)
+                #     new_table = cropped_page.find_table()
+                #     new_boxes.append(new_table.bbox)
 
-                st.sidebar.markdown("### Updated Bounding Boxes")
-                for box in st.session_state.table_boxes:
-                    st.sidebar.write(box)
+                # updated_image = draw_boxes(
+                #     im.original,
+                #     [st.session_state.table_boxes[st.session_state.table_to_edit_idx]],
+                #     color="green",
+                # )
+                # st.image(
+                #     updated_image,
+                #     caption="Editing Table Edges ...",
+                #     use_column_width=True,
+                # )
+
+                # st.sidebar.markdown("### Updated Bounding Boxes")
+                # for box in st.session_state.table_boxes:
+                #     st.sidebar.write(box)
 
             # if st.sidebar.button("Extract Table"):
             #     updated_image = draw_boxes(
@@ -127,44 +172,47 @@ if uploaded_file is not None:
             #     st.sidebar.markdown("### Updated Bounding Boxes")
             #     for box in st.session_state.table_boxes:
             #         st.sidebar.write(box)
-        else:
-            st.warning("No edges detected.")
-            canvas_result = adjust_box(im)
-            st.session_state.table_boxes = [
-                (
-                    box["left"],
-                    box["top"],
-                    box["left"] + box["width"],
-                    box["top"] + box["height"],
-                )
-                for box in canvas_result.json_data["objects"]  ## 🍎🍎
-            ]
-            print("🩷 canvas:", canvas_result.json_data["objects"])
 
-            ## Tabula
-            if st.sidebar.button("Retry Table Detection in Annotated Areas"):
-                new_boxes = []
-                for box in st.session_state.table_boxes:
+        # else:
+        #     # 🍎 page 넘기기 버튼?
 
-                    # pdfplumber: (left, top, right, bottom) => tabula: (top, left, bottom, right)
-                    df = tabula.read_pdf(
-                        uploaded_file,
-                        area=[box[1], box[0], box[3], box[2]],
-                        pages=2,
-                        multiple_tables=False,
-                        stream=True,
-                    )
+        #     st.warning("No edges detected.")
+        #     canvas_result = adjust_box(im)
+        #     st.session_state.table_boxes = [
+        #         (
+        #             box["left"],
+        #             box["top"],
+        #             box["left"] + box["width"],
+        #             box["top"] + box["height"],
+        #         )
+        #         for box in canvas_result.json_data["objects"]  ## 🍎🍎
+        #     ]
+        #     print("🩷 canvas:", canvas_result.json_data["objects"])
 
-                # st.session_state.table_boxes = new_boxes
-                st.session_state.page_preview = draw_boxes(
-                    im.original, st.session_state.table_boxes, color="green"
-                )  # https://github.com/jsvine/pdfplumber/tree/stable
-                # st.image(
-                #     updated_image,
-                #     caption="Updated Table Edges",
-                #     use_column_width=True,
-                # )
+        #     ## Tabula
+        #     if st.sidebar.button("Retry Table Detection in Annotated Areas"):
+        #         new_boxes = []
+        #         for box in st.session_state.table_boxes:
 
-                st.sidebar.markdown("### Updated Bounding Boxes")
-                for box in st.session_state.table_boxes:
-                    st.sidebar.write(box)
+        #             # pdfplumber: (left, top, right, bottom) => tabula: (top, left, bottom, right)
+        #             df = tabula.read_pdf(
+        #                 uploaded_file,
+        #                 area=[box[1], box[0], box[3], box[2]],
+        #                 pages=2,
+        #                 multiple_tables=False,
+        #                 stream=True,
+        #             )
+
+        #         # st.session_state.table_boxes = new_boxes
+        #         st.session_state.page_preview = draw_boxes(
+        #             im.original, st.session_state.table_boxes, color="green"
+        #         )  # https://github.com/jsvine/pdfplumber/tree/stable
+        #         # st.image(
+        #         #     updated_image,
+        #         #     caption="Updated Table Edges",
+        #         #     use_column_width=True,
+        #         # )
+
+        #         st.sidebar.markdown("### Updated Bounding Boxes")
+        #         for box in st.session_state.table_boxes:
+        #             st.sidebar.write(box)
