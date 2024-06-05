@@ -9,7 +9,7 @@ from streamlit_drawable_canvas import st_canvas
 if "table_boxes" not in st.session_state:
     st.session_state.table_boxes = None
     st.session_state.table_changes = None
-    st.session_state.editor_mode = False
+    st.session_state.table_to_edit_idx = None
     st.session_state.page_idx = 0
 
 
@@ -22,6 +22,7 @@ def draw_boxes(image, boxes: list, color="blue"):
 
 
 def adjust_box(page_image, box=None):
+    print("🩷", "adjust_box")
     im_pil = page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
@@ -55,6 +56,17 @@ def adjust_box(page_image, box=None):
 
     canvas_result = st_canvas(**kwargs)
     return canvas_result
+
+
+def update_table_to_edit_idx():
+    if (
+        "table_to_edit" in st.session_state
+        and st.session_state.table_to_edit is not None
+    ):
+        st.session_state["table_to_edit_idx"] = st.session_state.table_boxes.index(
+            st.session_state.table_to_edit
+        )
+        print("🩷", "updated table_to_edit_idx to ", st.session_state.table_to_edit_idx)
 
 
 # def adjust_replace_box(page_image):
@@ -118,21 +130,24 @@ if uploaded_file is not None:
                 st.rerun()
         else:
             # 테이블 수정
-            if st.sidebar.button("테이블 수정 및 제거") or st.session_state.editor_mode:
-                st.session_state.editor_mode = True
+            if (
+                st.sidebar.button("테이블 수정 및 제거")
+                or st.session_state.table_to_edit_idx is not None
+            ):
                 table_to_edit = st.sidebar.radio(
                     "Select Table to Edit",
                     st.session_state.table_boxes,
                     key="table_to_edit",
-                    index=None,
-                    # on_change=st.rerun,
+                    index=st.session_state.table_to_edit_idx,
+                    on_change=update_table_to_edit_idx,
                     # args=(im,),
                 )
-                if table_to_edit:
-                    st.session_state["table_to_edit_idx"] = (
-                        st.session_state.table_boxes.index(table_to_edit)
-                    )
 
+                # if table_to_edit:
+                if (
+                    st.sidebar.button("테이블 범위 수정")
+                    or st.session_state.table_to_edit_idx is not None
+                ):
                     # canvas로 수정
                     canvas_result = adjust_box(
                         im,
@@ -140,12 +155,10 @@ if uploaded_file is not None:
                             st.session_state.table_to_edit_idx
                         ],
                     )
-
                     if canvas_result.json_data is not None and len(
                         canvas_result.json_data["objects"]
                     ):
                         new_box = canvas_result.json_data["objects"][0]
-                        print(new_box)
                         st.session_state.table_boxes[
                             st.session_state.table_to_edit_idx
                         ] = (
@@ -154,19 +167,22 @@ if uploaded_file is not None:
                             new_box["left"] + new_box["width"],
                             new_box["top"] + new_box["height"],
                         )
-                        st.sidebar.write(
+                        st.sidebar.info(
                             st.session_state.table_boxes[
                                 st.session_state.table_to_edit_idx
                             ]
                         )
 
-                        if st.sidebar.button("Done"):
-                            st.session_state.editor_mode = False
-                            st.session_state.page_preview = draw_boxes(
-                                im.original,
-                                st.session_state.table_boxes,
-                                color="red",
-                            )
+                if st.sidebar.button("표 수정"):
+                    pass
+
+                if st.sidebar.button("수정 완료"):
+                    st.session_state.table_to_edit_idx = None
+                    st.session_state.page_preview = draw_boxes(
+                        im.original,
+                        st.session_state.table_boxes,
+                        color="red",
+                    )
 
                 # new_boxes = []
                 # for box in st.session_state.table_boxes:
