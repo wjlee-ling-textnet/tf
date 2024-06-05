@@ -1,12 +1,12 @@
 import streamlit as st
 import pdfplumber
 import tabula
+import pandas as pd
 
 from typing import Union, List
 from PIL import Image, ImageDraw
 from streamlit import experimental_rerun
 from streamlit_drawable_canvas import st_canvas
-
 
 if "table_boxes" not in st.session_state:
     st.session_state.table_boxes = None
@@ -14,6 +14,7 @@ if "table_boxes" not in st.session_state:
     st.session_state.table_to_edit_idx = None
     st.session_state.page_idx = 0
     st.session_state.next_steps = []
+    st.session_state.df = None
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -72,11 +73,21 @@ def update_table_to_edit_idx():
             st.session_state.table_to_edit
         )
         print("🩷", "updated table_to_edit_idx to ", st.session_state.table_to_edit_idx)
-        st.session_state.next_steps.extend(["테이블 범위 수정", "테이블 내용 수정"])
+        st.session_state.next_steps.extend(["테이블 범위 수정", "테이블 추출"])
 
 
-def extract_table_content():
-    pass
+def extract_table_content(bbox, padding=5):
+    """bbox가 너무 타이트하면 바깥쪽 셀 내용은 추출 못함"""
+    # 🍎 page 범위 내로 패딩
+    extended_bbox = (
+        bbox[0] - padding,
+        bbox[1] - padding,
+        bbox[2] + padding,
+        bbox[3] + padding,
+    )
+    cropped_page = page.within_bbox(extended_bbox)
+    new_table = cropped_page.extract_table()
+    return new_table
 
 
 def export_to_csv(page_idx, table_idx):
@@ -163,6 +174,8 @@ if uploaded_file is not None:
                 )
 
                 if table_to_edit:
+                    print("🩷", "editing a table...")
+                    print(st.session_state.df)
                     if (
                         st.sidebar.button(
                             "테이블 범위 수정",
@@ -200,8 +213,37 @@ if uploaded_file is not None:
                             )
                         st.session_state.next_steps = ["수정 완료"]
 
-                    if st.sidebar.button("테이블 내용 수정"):
-                        pass
+                    if (
+                        st.sidebar.button(
+                            "테이블 추출",
+                            disabled=("테이블 추출" not in st.session_state.next_steps),
+                        )
+                        or st.session_state.df is not None
+                    ):
+                        box = st.session_state.table_boxes[
+                            st.session_state.table_to_edit_idx
+                        ]
+                        if st.session_state.df is None:
+                            new_table = extract_table_content(
+                                box,
+                                padding=10,
+                            )
+                            st.session_state.df = pd.DataFrame(
+                                new_table
+                            )  ## 🍎🍎 TODO: no-index
+
+                        st.dataframe(st.session_state.df, hide_index=True)
+                        if st.sidebar.button("다른 방법으로 재추출"):
+                            tabula_table = tabula.read_pdf(
+                                uploaded_file,
+                                area=[box[1], box[0], box[3], box[2]],
+                                pages=0,
+                                multiple_tables=False,
+                                stream=True,
+                            )[0]
+                            st.session_state.df = tabula_table
+                            st.session_state.next_steps = ["테이블 csv 저장"]
+                            st.rerun()
 
                     if st.sidebar.button(
                         "수정 완료",
@@ -221,12 +263,6 @@ if uploaded_file is not None:
                         st.rerun()
 
                     if st.sidebar.button(
-                        "테이블 인식",
-                        disabled=("테이블 인식" in st.session_state.next_steps),
-                    ):
-                        st.session_state.next_steps = ["테이블 csv 저장"]
-
-                    if st.sidebar.button(
                         "테이블 csv 저장",
                         disabled=("테이블 csv 저장" not in st.session_state.next_steps),
                     ):
@@ -243,6 +279,7 @@ if uploaded_file is not None:
                         st.session_state.page_idx += 1
                         st.session_state.table_boxes = []
                         st.session_state.table_to_edit_idx = None
+                        # st.session_state.df = None
 
         # else:
         #     # 🍎 page 넘기기 버튼?
