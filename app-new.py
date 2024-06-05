@@ -1,6 +1,8 @@
 import streamlit as st
 import pdfplumber
 import tabula
+
+from typing import Union, List
 from PIL import Image, ImageDraw
 from streamlit import experimental_rerun
 from streamlit_drawable_canvas import st_canvas
@@ -13,10 +15,13 @@ if "table_boxes" not in st.session_state:
     st.session_state.page_idx = 0
 
 
-def draw_boxes(image, boxes: list, color="blue"):
+def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
+    if type(colors) == str:
+        colors = [colors] * len(boxes)
+
     if boxes is not None:
         draw = ImageDraw.Draw(image)
-        for box in boxes:
+        for box, color in zip(boxes, colors):
             draw.rectangle(box, outline=color, width=2)
     return image
 
@@ -123,7 +128,7 @@ if uploaded_file is not None:
                     st.session_state.page_preview = draw_boxes(
                         im.original,
                         st.session_state.table_boxes,
-                        color="blue",
+                        colors="blue",
                     )
 
                 st.rerun()
@@ -177,12 +182,15 @@ if uploaded_file is not None:
                     pass
 
                 if st.sidebar.button("수정 완료"):
-                    st.session_state.table_to_edit_idx = None
+                    colors = ["blue"] * len(st.session_state.table_boxes)
+                    colors[st.session_state.table_to_edit_idx] = "green"
                     st.session_state.page_preview = draw_boxes(
                         im.original,
                         st.session_state.table_boxes,
-                        color="red",
+                        colors=colors,
                     )
+                    st.session_state.table_to_edit_idx = None
+                    st.rerun()
 
                 # new_boxes = []
                 # for box in st.session_state.table_boxes:
