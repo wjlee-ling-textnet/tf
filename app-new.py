@@ -125,10 +125,13 @@ if uploaded_file is not None:
                     st.session_state.table_boxes = [
                         (table.bbox) for table in detected_tables
                     ]
+                    colors = ["blue"] * len(st.session_state.table_boxes)
+                    if st.session_state.table_to_edit_idx is not None:
+                        colors[st.session_state.table_to_edit_idx] = "red"
                     st.session_state.page_preview = draw_boxes(
                         im.original,
                         st.session_state.table_boxes,
-                        colors="blue",
+                        colors=colors,
                     )
 
                 st.rerun()
@@ -178,10 +181,13 @@ if uploaded_file is not None:
                             ]
                         )
 
-                if st.sidebar.button("표 수정"):
+                if st.sidebar.button("테이블 수정"):
                     pass
 
                 if st.sidebar.button("수정 완료"):
+                    if "canvas" in st.session_state:
+                        del st.session_state["canvas"]
+
                     colors = ["blue"] * len(st.session_state.table_boxes)
                     colors[st.session_state.table_to_edit_idx] = "green"
                     st.session_state.page_preview = draw_boxes(
