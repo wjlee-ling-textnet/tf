@@ -13,6 +13,7 @@ if "table_boxes" not in st.session_state:
     st.session_state.table_changes = None
     st.session_state.table_to_edit_idx = None
     st.session_state.page_idx = 0
+    st.session_state.next_steps = []
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -71,6 +72,15 @@ def update_table_to_edit_idx():
             st.session_state.table_to_edit
         )
         print("🩷", "updated table_to_edit_idx to ", st.session_state.table_to_edit_idx)
+        st.session_state.next_steps.extend(["테이블 범위 수정", "테이블 내용 수정"])
+
+
+def extract_table_content():
+    pass
+
+
+def export_to_csv(page_idx, table_idx):
+    pass
 
 
 # def adjust_replace_box(page_image):
@@ -111,6 +121,7 @@ if uploaded_file is not None:
             # 🍎 PAGE 넘어갈 때마다 RESET
             st.session_state.page_preview = im.original
             st.session_state.table_boxes = []
+            st.session_state.next_steps.clear()
 
         st.image(
             st.session_state.page_preview,
@@ -119,7 +130,7 @@ if uploaded_file is not None:
         )
 
         if st.session_state.table_boxes == []:
-            if st.sidebar.button("테이블 추출"):
+            if st.sidebar.button("모든 테이블 인식"):
                 detected_tables = page.find_tables()
                 if detected_tables:
                     st.session_state.table_boxes = [
@@ -134,6 +145,7 @@ if uploaded_file is not None:
                         colors=colors,
                     )
 
+                st.session_state.next_steps.append("테이블 csv 추출")
                 st.rerun()
         else:
             # 테이블 수정
@@ -150,88 +162,87 @@ if uploaded_file is not None:
                     # args=(im,),
                 )
 
-                # if table_to_edit:
-                if (
-                    st.sidebar.button("테이블 범위 수정")
-                    or "canvas"
-                    in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
-                ):
-                    # canvas로 수정
-                    canvas_result = adjust_box(
-                        im,
-                        st.session_state.table_boxes[
-                            st.session_state.table_to_edit_idx
-                        ],
-                    )
-                    if canvas_result.json_data is not None and len(
-                        canvas_result.json_data["objects"]
-                    ):
-                        new_box = canvas_result.json_data["objects"][0]
-                        st.session_state.table_boxes[
-                            st.session_state.table_to_edit_idx
-                        ] = (
-                            new_box["left"],
-                            new_box["top"],
-                            new_box["left"] + new_box["width"],
-                            new_box["top"] + new_box["height"],
+                if table_to_edit:
+                    if (
+                        st.sidebar.button(
+                            "테이블 범위 수정",
+                            disabled=(
+                                "테이블 범위 수정" not in st.session_state.next_steps
+                            ),
                         )
-                        st.sidebar.info(
+                        or "canvas"
+                        in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
+                    ):
+
+                        # canvas로 수정
+                        canvas_result = adjust_box(
+                            im,
                             st.session_state.table_boxes[
                                 st.session_state.table_to_edit_idx
-                            ]
+                            ],
                         )
+                        if canvas_result.json_data is not None and len(
+                            canvas_result.json_data["objects"]
+                        ):
+                            new_box = canvas_result.json_data["objects"][0]
+                            st.session_state.table_boxes[
+                                st.session_state.table_to_edit_idx
+                            ] = (
+                                new_box["left"],
+                                new_box["top"],
+                                new_box["left"] + new_box["width"],
+                                new_box["top"] + new_box["height"],
+                            )
+                            st.sidebar.info(
+                                st.session_state.table_boxes[
+                                    st.session_state.table_to_edit_idx
+                                ]
+                            )
+                        st.session_state.next_steps = ["수정 완료"]
 
-                if st.sidebar.button("테이블 수정"):
-                    pass
+                    if st.sidebar.button("테이블 내용 수정"):
+                        pass
 
-                if st.sidebar.button("수정 완료"):
-                    if "canvas" in st.session_state:
-                        del st.session_state["canvas"]
+                    if st.sidebar.button(
+                        "수정 완료",
+                        disabled=("수정 완료" not in st.session_state.next_steps),
+                    ):
+                        if "canvas" in st.session_state:
+                            del st.session_state["canvas"]
 
-                    colors = ["blue"] * len(st.session_state.table_boxes)
-                    colors[st.session_state.table_to_edit_idx] = "green"
-                    st.session_state.page_preview = draw_boxes(
-                        im.original,
-                        st.session_state.table_boxes,
-                        colors=colors,
-                    )
-                    st.session_state.table_to_edit_idx = None
-                    st.rerun()
+                        colors = ["blue"] * len(st.session_state.table_boxes)
+                        colors[st.session_state.table_to_edit_idx] = "green"
+                        st.session_state.page_preview = draw_boxes(
+                            im.original,
+                            st.session_state.table_boxes,
+                            colors=colors,
+                        )
+                        st.session_state.next_steps = ["테이블 인식"]
+                        st.rerun()
 
-                # new_boxes = []
-                # for box in st.session_state.table_boxes:
-                #     cropped_page = page.within_bbox(box)
-                #     new_table = cropped_page.find_table()
-                #     new_boxes.append(new_table.bbox)
+                    if st.sidebar.button(
+                        "테이블 인식",
+                        disabled=("테이블 인식" in st.session_state.next_steps),
+                    ):
+                        st.session_state.next_steps = ["테이블 csv 저장"]
 
-                # updated_image = draw_boxes(
-                #     im.original,
-                #     [st.session_state.table_boxes[st.session_state.table_to_edit_idx]],
-                #     color="green",
-                # )
-                # st.image(
-                #     updated_image,
-                #     caption="Editing Table Edges ...",
-                #     use_column_width=True,
-                # )
+                    if st.sidebar.button(
+                        "테이블 csv 저장",
+                        disabled=("테이블 csv 저장" not in st.session_state.next_steps),
+                    ):
+                        export_to_csv()
+                        st.session_state.next_steps = [
+                            "다음 페이지",
+                            "테이블 수정 및 제거",
+                        ]
 
-                # st.sidebar.markdown("### Updated Bounding Boxes")
-                # for box in st.session_state.table_boxes:
-                #     st.sidebar.write(box)
-
-            # if st.sidebar.button("Extract Table"):
-            #     updated_image = draw_boxes(
-            #         im.original, st.session_state.table_boxes, color="blue"
-            #     )
-            #     st.image(
-            #         updated_image,
-            #         caption="Updated Edges",
-            #         use_column_width=True,
-            #     )
-
-            #     st.sidebar.markdown("### Updated Bounding Boxes")
-            #     for box in st.session_state.table_boxes:
-            #         st.sidebar.write(box)
+                    if st.sidebar.button(
+                        "다음 페이지",
+                        disabled=("다음 페이지" not in st.session_state.next_steps),
+                    ):
+                        st.session_state.page_idx += 1
+                        st.session_state.table_boxes = []
+                        st.session_state.table_to_edit_idx = None
 
         # else:
         #     # 🍎 page 넘기기 버튼?
