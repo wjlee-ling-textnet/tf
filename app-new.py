@@ -21,9 +21,9 @@ def draw_boxes(image, boxes: list, color="blue"):
     return image
 
 
-def adjust_box(page_image, box=None):
+def adjust_box(_page_image, box=None):
     print("🩷", "adjust_box")
-    im_pil = page_image.original.convert("RGB")
+    im_pil = _page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
 
@@ -53,7 +53,6 @@ def adjust_box(page_image, box=None):
                 }
             ]
         }
-
     canvas_result = st_canvas(**kwargs)
     return canvas_result
 
@@ -146,7 +145,8 @@ if uploaded_file is not None:
                 # if table_to_edit:
                 if (
                     st.sidebar.button("테이블 범위 수정")
-                    or st.session_state.table_to_edit_idx is not None
+                    or "canvas"
+                    in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
                 ):
                     # canvas로 수정
                     canvas_result = adjust_box(
