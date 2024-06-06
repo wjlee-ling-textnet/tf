@@ -104,28 +104,6 @@ def export_to_csv(page_idx, table_idx):
     pass
 
 
-# def adjust_replace_box(page_image):
-#     st.session_state["table_to_edit_idx"] = st.session_state.table_boxes.index(
-#         st.session_state.table_to_edit
-#     )
-#     # canvas로 수정
-#     canvas_result = adjust_box(
-#         page_image,
-#         st.session_state.table_boxes[st.session_state.table_to_edit_idx],
-#     )
-#     if canvas_result.json_data["objects"]:
-#         new_box = canvas_result.json_data["objects"][0]
-#         st.session_state.table_boxes[st.session_state.table_to_edit_idx] = (
-#             new_box["left"],
-#             new_box["top"],
-#             new_box["left"] + new_box["width"],
-#             new_box["top"] + new_box["height"],
-#         )
-#         st.sidebar.write(
-#             st.session_state.table_boxes[st.session_state.table_to_edit_idx]
-#         )
-
-
 st.title("PDF Table Edge Detection Adjustment")
 if "pdf" not in st.session_state:
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
@@ -148,7 +126,7 @@ if "pdf" in st.session_state:
     im = page.to_image()
 
     if st.session_state.page_preview is None:
-        # if the user inputs a new page idx, update the page preview
+        # if the user inputs a new page idx, update the page preview accordingly
         st.session_state.page_preview = im.original
 
     st.image(
@@ -198,7 +176,6 @@ if "pdf" in st.session_state:
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
-
                 # canvas로 수정
                 canvas_result = adjust_box(
                     im,
@@ -237,6 +214,11 @@ if "pdf" in st.session_state:
                 make_button("테이블 추출", st.session_state.next_steps)
                 or st.session_state.df is not None
             ):
+                st.session_state.next_steps = [
+                    "테이블 csv 저장",
+                    "다른 방법으로 재추출",
+                ]
+
                 box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
                 if st.session_state.df is None:
                     new_table = extract_table_content(
@@ -248,6 +230,7 @@ if "pdf" in st.session_state:
                     )  ## 🍎🍎 TODO: no-index
 
                 st.dataframe(st.session_state.df, hide_index=True)
+
                 if make_button("다른 방법으로 재추출", st.session_state.next_steps):
                     tabula_table = tabula.read_pdf(
                         uploaded_file,
@@ -257,7 +240,6 @@ if "pdf" in st.session_state:
                         stream=True,
                     )[0]
                     st.session_state.df = tabula_table
-                    st.session_state.next_steps = ["테이블 csv 저장"]
                     st.rerun()
 
             if make_button("테이블 csv 저장", st.session_state.next_steps):
