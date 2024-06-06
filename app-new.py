@@ -105,10 +105,11 @@ def export_to_csv(page_idx, table_idx):
 
 
 st.title("PDF Table Edge Detection Adjustment")
-if "pdf" not in st.session_state:
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
-    if uploaded_file:
-        st.session_state.pdf = pdfplumber.open(uploaded_file)
+uploaded_file = st.file_uploader(
+    "Choose a PDF file", type="pdf", disabled=("pdf" in st.session_state)
+)
+if uploaded_file:
+    st.session_state.pdf = pdfplumber.open(uploaded_file)
 
 if "pdf" in st.session_state:
     st.sidebar.title("Adjust Table Edges")
@@ -170,13 +171,11 @@ if "pdf" in st.session_state:
 
         if table_to_edit:
             print("🩷", "editing a table...")
-            print(st.session_state.df)
             if (
                 make_button("테이블 범위 수정", st.session_state.next_steps)
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
-                # canvas로 수정
                 canvas_result = adjust_box(
                     im,
                     st.session_state.table_boxes[st.session_state.table_to_edit_idx],
@@ -242,12 +241,12 @@ if "pdf" in st.session_state:
                     st.session_state.df = tabula_table
                     st.rerun()
 
-            if make_button("테이블 csv 저장", st.session_state.next_steps):
-                export_to_csv()
-                st.session_state.next_steps = [
-                    "다음 페이지",
-                    "테이블 수정 및 제거",
-                ]
+                if make_button("테이블 csv 저장", st.session_state.next_steps):
+                    export_to_csv()
+                    st.session_state.next_steps = [
+                        "다음 페이지",
+                        "테이블 수정 및 제거",
+                    ]
 
             if make_button("다음 페이지", st.session_state.next_steps):
                 st.session_state.page_idx += 1
