@@ -9,12 +9,21 @@ from streamlit import experimental_rerun
 from streamlit_drawable_canvas import st_canvas
 
 if "table_boxes" not in st.session_state:
-    st.session_state.table_boxes = None
-    st.session_state.table_changes = None
-    st.session_state.table_to_edit_idx = None
     st.session_state.page_idx = 0
+    st.session_state.page_preview = None
+    st.session_state.table_boxes = None
+    st.session_state.table_to_edit_idx = None
     st.session_state.next_steps = []
     st.session_state.df = None
+
+
+def turn_page():
+    st.session_state.page_idx = st.session_state.user_input_page_idx - 1
+    st.session_state.page_preview = None
+    st.session_state.table_boxes = []
+    st.session_state.table_to_edit_idx = None
+    st.session_state.df = None
+    st.session_state.next_steps.clear()
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -117,172 +126,169 @@ def export_to_csv(page_idx, table_idx):
 
 
 st.title("PDF Table Edge Detection Adjustment")
-uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+if "pdf" not in st.session_state:
+    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+    if uploaded_file:
+        st.session_state.pdf = pdfplumber.open(uploaded_file)
 
-if uploaded_file is not None:
+if "pdf" in st.session_state:
     st.sidebar.title("Adjust Table Edges")
 
-    with pdfplumber.open(uploaded_file) as pdf:
-        # for idx, page in enumerate(pdf.pages):
+    page_idx = st.sidebar.number_input(
+        "페이지 쪽수",
+        min_value=1,
+        max_value=len(st.session_state.pdf.pages),
+        value=1,
+        on_change=turn_page,
+        key="user_input_page_idx",
+    )
 
-        page = pdf.pages[0]
-        im = page.to_image()
+    page = st.session_state.pdf.pages[st.session_state.page_idx]
+    im = page.to_image()
 
-        if "page_preview" not in st.session_state:
-            # 🍎 PAGE 넘어갈 때마다 RESET
-            st.session_state.page_preview = im.original
-            st.session_state.table_boxes = []
-            st.session_state.next_steps.clear()
+    if st.session_state.page_preview is None:
+        # if the user inputs a new page idx, update the page preview
+        st.session_state.page_preview = im.original
 
-        st.image(
-            st.session_state.page_preview,
-            caption="page preview",
-            use_column_width=True,
+    st.image(
+        st.session_state.page_preview,
+        caption=f"page {st.session_state.page_idx + 1}",
+        use_column_width=True,
+    )
+
+    if st.session_state.table_boxes == []:
+        if st.sidebar.button("모든 테이블 인식"):
+            detected_tables = page.find_tables()
+            if detected_tables:
+                st.session_state.table_boxes = [
+                    (table.bbox) for table in detected_tables
+                ]
+                colors = ["blue"] * len(st.session_state.table_boxes)
+                if st.session_state.table_to_edit_idx is not None:
+                    colors[st.session_state.table_to_edit_idx] = "red"
+                st.session_state.page_preview = draw_boxes(
+                    im.original,
+                    st.session_state.table_boxes,
+                    colors=colors,
+                )
+
+            st.session_state.next_steps.append("테이블 csv 추출")
+            st.rerun()
+    else:
+        # 테이블 수정
+        # if (
+        #     st.sidebar.button("테이블 수정 및 제거")
+        #     or st.session_state.table_to_edit_idx is not None
+        # ):
+        table_to_edit = st.sidebar.radio(
+            "Select Table to Edit",
+            st.session_state.table_boxes,
+            key="table_to_edit",
+            index=st.session_state.table_to_edit_idx,
+            on_change=update_table_to_edit_idx,
+            # args=(im,),
         )
 
-        if st.session_state.table_boxes == []:
-            if st.sidebar.button("모든 테이블 인식"):
-                detected_tables = page.find_tables()
-                if detected_tables:
-                    st.session_state.table_boxes = [
-                        (table.bbox) for table in detected_tables
-                    ]
-                    colors = ["blue"] * len(st.session_state.table_boxes)
-                    if st.session_state.table_to_edit_idx is not None:
-                        colors[st.session_state.table_to_edit_idx] = "red"
-                    st.session_state.page_preview = draw_boxes(
-                        im.original,
-                        st.session_state.table_boxes,
-                        colors=colors,
-                    )
+        if table_to_edit:
+            print("🩷", "editing a table...")
+            print(st.session_state.df)
+            if (
+                st.sidebar.button(
+                    "테이블 범위 수정",
+                    disabled=("테이블 범위 수정" not in st.session_state.next_steps),
+                )
+                or "canvas"
+                in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
+            ):
 
-                st.session_state.next_steps.append("테이블 csv 추출")
+                # canvas로 수정
+                canvas_result = adjust_box(
+                    im,
+                    st.session_state.table_boxes[st.session_state.table_to_edit_idx],
+                )
+                if canvas_result.json_data is not None and len(
+                    canvas_result.json_data["objects"]
+                ):
+                    new_box = canvas_result.json_data["objects"][0]
+                    st.session_state.table_boxes[st.session_state.table_to_edit_idx] = (
+                        new_box["left"],
+                        new_box["top"],
+                        new_box["left"] + new_box["width"],
+                        new_box["top"] + new_box["height"],
+                    )
+                    st.sidebar.info(
+                        st.session_state.table_boxes[st.session_state.table_to_edit_idx]
+                    )
+                st.session_state.next_steps = ["수정 완료"]
+
+            if st.sidebar.button(
+                "수정 완료",
+                disabled=("수정 완료" not in st.session_state.next_steps),
+            ):
+                if "canvas" in st.session_state:
+                    del st.session_state["canvas"]
+
+                colors = ["blue"] * len(st.session_state.table_boxes)
+                colors[st.session_state.table_to_edit_idx] = "green"
+                st.session_state.page_preview = draw_boxes(
+                    im.original,
+                    st.session_state.table_boxes,
+                    colors=colors,
+                )
+                st.session_state.next_steps = ["테이블 추출"]
                 st.rerun()
-        else:
-            # 테이블 수정
-            # if (
-            #     st.sidebar.button("테이블 수정 및 제거")
-            #     or st.session_state.table_to_edit_idx is not None
-            # ):
-            table_to_edit = st.sidebar.radio(
-                "Select Table to Edit",
-                st.session_state.table_boxes,
-                key="table_to_edit",
-                index=st.session_state.table_to_edit_idx,
-                on_change=update_table_to_edit_idx,
-                # args=(im,),
-            )
 
-            if table_to_edit:
-                print("🩷", "editing a table...")
-                print(st.session_state.df)
-                if (
-                    st.sidebar.button(
-                        "테이블 범위 수정",
-                        disabled=(
-                            "테이블 범위 수정" not in st.session_state.next_steps
-                        ),
+            if (
+                st.sidebar.button(
+                    "테이블 추출",
+                    disabled=("테이블 추출" not in st.session_state.next_steps),
+                )
+                or st.session_state.df is not None
+            ):
+                box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
+                if st.session_state.df is None:
+                    new_table = extract_table_content(
+                        box,
+                        padding=10,
                     )
-                    or "canvas"
-                    in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
-                ):
+                    st.session_state.df = pd.DataFrame(
+                        new_table
+                    )  ## 🍎🍎 TODO: no-index
 
-                    # canvas로 수정
-                    canvas_result = adjust_box(
-                        im,
-                        st.session_state.table_boxes[
-                            st.session_state.table_to_edit_idx
-                        ],
-                    )
-                    if canvas_result.json_data is not None and len(
-                        canvas_result.json_data["objects"]
-                    ):
-                        new_box = canvas_result.json_data["objects"][0]
-                        st.session_state.table_boxes[
-                            st.session_state.table_to_edit_idx
-                        ] = (
-                            new_box["left"],
-                            new_box["top"],
-                            new_box["left"] + new_box["width"],
-                            new_box["top"] + new_box["height"],
-                        )
-                        st.sidebar.info(
-                            st.session_state.table_boxes[
-                                st.session_state.table_to_edit_idx
-                            ]
-                        )
-                    st.session_state.next_steps = ["수정 완료"]
-
+                st.dataframe(st.session_state.df, hide_index=True)
                 if st.sidebar.button(
-                    "수정 완료",
-                    disabled=("수정 완료" not in st.session_state.next_steps),
+                    "다른 방법으로 재추출",
+                    disabled=("테이블 추출" not in st.session_state.next_steps),
                 ):
-                    if "canvas" in st.session_state:
-                        del st.session_state["canvas"]
-
-                    colors = ["blue"] * len(st.session_state.table_boxes)
-                    colors[st.session_state.table_to_edit_idx] = "green"
-                    st.session_state.page_preview = draw_boxes(
-                        im.original,
-                        st.session_state.table_boxes,
-                        colors=colors,
-                    )
-                    st.session_state.next_steps = ["테이블 추출"]
+                    tabula_table = tabula.read_pdf(
+                        uploaded_file,
+                        area=[box[1], box[0], box[3], box[2]],
+                        pages=0,
+                        multiple_tables=False,
+                        stream=True,
+                    )[0]
+                    st.session_state.df = tabula_table
+                    st.session_state.next_steps = ["테이블 csv 저장"]
                     st.rerun()
 
-                if (
-                    st.sidebar.button(
-                        "테이블 추출",
-                        disabled=("테이블 추출" not in st.session_state.next_steps),
-                    )
-                    or st.session_state.df is not None
-                ):
-                    box = st.session_state.table_boxes[
-                        st.session_state.table_to_edit_idx
-                    ]
-                    if st.session_state.df is None:
-                        new_table = extract_table_content(
-                            box,
-                            padding=10,
-                        )
-                        st.session_state.df = pd.DataFrame(
-                            new_table
-                        )  ## 🍎🍎 TODO: no-index
-
-                    st.dataframe(st.session_state.df, hide_index=True)
-                    if st.sidebar.button(
-                        "다른 방법으로 재추출",
-                        disabled=("테이블 추출" not in st.session_state.next_steps),
-                    ):
-                        tabula_table = tabula.read_pdf(
-                            uploaded_file,
-                            area=[box[1], box[0], box[3], box[2]],
-                            pages=0,
-                            multiple_tables=False,
-                            stream=True,
-                        )[0]
-                        st.session_state.df = tabula_table
-                        st.session_state.next_steps = ["테이블 csv 저장"]
-                        st.rerun()
-
-                if st.sidebar.button(
-                    "테이블 csv 저장",
-                    disabled=("테이블 csv 저장" not in st.session_state.next_steps),
-                ):
-                    export_to_csv()
-                    st.session_state.next_steps = [
-                        "다음 페이지",
-                        "테이블 수정 및 제거",
-                    ]
-
-                if st.sidebar.button(
+            if st.sidebar.button(
+                "테이블 csv 저장",
+                disabled=("테이블 csv 저장" not in st.session_state.next_steps),
+            ):
+                export_to_csv()
+                st.session_state.next_steps = [
                     "다음 페이지",
-                    disabled=("다음 페이지" not in st.session_state.next_steps),
-                ):
-                    st.session_state.page_idx += 1
-                    st.session_state.table_boxes = []
-                    st.session_state.table_to_edit_idx = None
-                    # st.session_state.df = None
+                    "테이블 수정 및 제거",
+                ]
+
+            if st.sidebar.button(
+                "다음 페이지",
+                disabled=("다음 페이지" not in st.session_state.next_steps),
+            ):
+                st.session_state.page_idx += 1
+                st.session_state.table_boxes = []
+                st.session_state.table_to_edit_idx = None
+                # st.session_state.df = None
 
         # else:
         #     # 🍎 page 넘기기 버튼?
