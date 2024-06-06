@@ -242,17 +242,10 @@ if "pdf" in st.session_state:
                     st.rerun()
 
                 if make_button("테이블 csv 저장", st.session_state.next_steps):
-                    export_to_csv()
+                    # export_to_csv()
                     st.session_state.next_steps = [
-                        "다음 페이지",
                         "테이블 수정 및 제거",
                     ]
-
-            if make_button("다음 페이지", st.session_state.next_steps):
-                st.session_state.page_idx += 1
-                st.session_state.table_boxes = []
-                st.session_state.table_to_edit_idx = None
-                # st.session_state.df = None
 
         # else:
         #     # 🍎 page 넘기기 버튼?
