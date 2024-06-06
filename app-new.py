@@ -1,17 +1,18 @@
-import streamlit as st
+from utils.streamlit import make_button
+
 import pdfplumber
 import tabula
 import pandas as pd
+import streamlit as st
 
 from typing import Union, List
 from PIL import Image, ImageDraw
-from streamlit import experimental_rerun
 from streamlit_drawable_canvas import st_canvas
 
 if "table_boxes" not in st.session_state:
     st.session_state.page_idx = 0
     st.session_state.page_preview = None
-    st.session_state.table_boxes = None
+    st.session_state.table_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.next_steps = []
     st.session_state.df = None
@@ -157,7 +158,7 @@ if "pdf" in st.session_state:
     )
 
     if st.session_state.table_boxes == []:
-        if st.sidebar.button("모든 테이블 인식"):
+        if make_button("모든 테이블 인식"):
             detected_tables = page.find_tables()
             if detected_tables:
                 st.session_state.table_boxes = [
@@ -193,12 +194,9 @@ if "pdf" in st.session_state:
             print("🩷", "editing a table...")
             print(st.session_state.df)
             if (
-                st.sidebar.button(
-                    "테이블 범위 수정",
-                    disabled=("테이블 범위 수정" not in st.session_state.next_steps),
-                )
-                or "canvas"
-                in st.session_state  # need this condition because the widget box is created after running 'adjust_box' more than two times
+                make_button("테이블 범위 수정", st.session_state.next_steps)
+                or "canvas" in st.session_state
+                # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
 
                 # canvas로 수정
@@ -221,10 +219,7 @@ if "pdf" in st.session_state:
                     )
                 st.session_state.next_steps = ["수정 완료"]
 
-            if st.sidebar.button(
-                "수정 완료",
-                disabled=("수정 완료" not in st.session_state.next_steps),
-            ):
+            if make_button("수정 완료", st.session_state.next_steps):
                 if "canvas" in st.session_state:
                     del st.session_state["canvas"]
 
@@ -239,10 +234,7 @@ if "pdf" in st.session_state:
                 st.rerun()
 
             if (
-                st.sidebar.button(
-                    "테이블 추출",
-                    disabled=("테이블 추출" not in st.session_state.next_steps),
-                )
+                make_button("테이블 추출", st.session_state.next_steps)
                 or st.session_state.df is not None
             ):
                 box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
@@ -256,10 +248,7 @@ if "pdf" in st.session_state:
                     )  ## 🍎🍎 TODO: no-index
 
                 st.dataframe(st.session_state.df, hide_index=True)
-                if st.sidebar.button(
-                    "다른 방법으로 재추출",
-                    disabled=("테이블 추출" not in st.session_state.next_steps),
-                ):
+                if make_button("다른 방법으로 재추출", st.session_state.next_steps):
                     tabula_table = tabula.read_pdf(
                         uploaded_file,
                         area=[box[1], box[0], box[3], box[2]],
@@ -271,20 +260,14 @@ if "pdf" in st.session_state:
                     st.session_state.next_steps = ["테이블 csv 저장"]
                     st.rerun()
 
-            if st.sidebar.button(
-                "테이블 csv 저장",
-                disabled=("테이블 csv 저장" not in st.session_state.next_steps),
-            ):
+            if make_button("테이블 csv 저장", st.session_state.next_steps):
                 export_to_csv()
                 st.session_state.next_steps = [
                     "다음 페이지",
                     "테이블 수정 및 제거",
                 ]
 
-            if st.sidebar.button(
-                "다음 페이지",
-                disabled=("다음 페이지" not in st.session_state.next_steps),
-            ):
+            if make_button("다음 페이지", st.session_state.next_steps):
                 st.session_state.page_idx += 1
                 st.session_state.table_boxes = []
                 st.session_state.table_to_edit_idx = None
