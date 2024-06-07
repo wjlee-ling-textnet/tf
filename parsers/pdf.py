@@ -4,11 +4,13 @@ from parsers.utilities import get_column_boxes
 
 import argparse
 import fitz
-import tika
+
+# import tika
 import pdfplumber
 from typing import Union
 from pathlib import Path
-from tika import parser as tika_parser
+
+# from tika import parser as tika_parser
 from tqdm import tqdm
 
 # from unstructured.partition.pdf import partition_pdf
@@ -265,16 +267,16 @@ if __name__ == "__main__":
             table_config=table_config,
         )
 
-    elif args.function == "extract_tables_unstructured":
-        tables = extract_tables_unstructured(args.path)
-        print(tables)
+    # elif args.function == "extract_tables_unstructured":
+    #     tables = extract_tables_unstructured(args.path)
+    #     print(tables)
 
-    elif args.function == "extract_text_tika":
-        parsed = extract_text_tika(args.path)
-        print(parsed)
+    # elif args.function == "extract_text_tika":
+    #     parsed = extract_text_tika(args.path)
+    #     print(parsed)
 
-    elif args.function == "extract_elements_per_page_pdfplumber":
-        extract_elements_per_page_pdfplumber(args.path)
+    # elif args.function == "extract_elements_per_page_pdfplumber":
+    #     extract_elements_per_page_pdfplumber(args.path)
 
     else:
         print("Invalid function name")
