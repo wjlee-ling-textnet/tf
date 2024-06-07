@@ -23,8 +23,6 @@ if "table_boxes" not in st.session_state:
 
 def turn_page():
     st.session_state.page_idx = st.session_state.user_input_page_idx - 1
-    print("🩷", f"new_page {st.session_state.user_input_page_idx}")
-    print("🩷", f"page_idx: {st.session_state.page_idx}")
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
     st.session_state.table_to_edit_idx = None
