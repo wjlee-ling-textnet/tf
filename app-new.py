@@ -107,7 +107,7 @@ def export_to_csv(new_dfs):
         st.sidebar.download_button(
             "Download CSV",
             new_dfs[st.session_state.save_df_idx].to_csv(index=False),
-            file_name=f"page{st.session_state.page_idx+1}_{st.session_state.save_df_idx.lstrip('df')}.csv",
+            file_name=f"page{st.session_state.page_idx+1}_{st.session_state.table_to_edit_idx+1}.csv",
         )
 
 
