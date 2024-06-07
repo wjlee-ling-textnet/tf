@@ -16,7 +16,7 @@ if "table_boxes" not in st.session_state:
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
     st.session_state.table_to_edit_idx = None
-    st.session_state.next_steps = []
+    st.session_state.next_steps = ["모든 테이블 인식"]
     st.session_state.df = None
 
 
@@ -26,7 +26,7 @@ def turn_page():
     st.session_state.table_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.df = None
-    st.session_state.next_steps.clear()
+    st.session_state.next_steps = ["모든 테이블 인식"]
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -41,7 +41,6 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
 
 
 def adjust_box(_page_image, box=None):
-    print("🩷", "adjust_box")
     im_pil = _page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
@@ -84,8 +83,7 @@ def update_table_to_edit_idx():
         st.session_state["table_to_edit_idx"] = st.session_state.table_boxes.index(
             st.session_state.table_to_edit
         )
-        print("🩷", "updated table_to_edit_idx to ", st.session_state.table_to_edit_idx)
-        st.session_state.next_steps.extend(["테이블 범위 수정", "테이블 추출"])
+        st.session_state.next_steps = ["테이블 범위 수정", "테이블 추출"]
 
 
 def extract_table_content(bbox, padding=5):
@@ -102,8 +100,12 @@ def extract_table_content(bbox, padding=5):
     return new_table
 
 
-def export_to_csv(page_idx, table_idx):
-    pass
+def export_to_csv(new_dfs):
+    st.download_button(
+        "Download CSV",
+        new_dfs[st.session_state.df_idx].to_csv(index=False),
+        file_name=f"page{st.session_state.page_idx+1}_{st.session_state.df_idx.lstrip('df')}.csv",
+    )
 
 
 st.title("PDF Table Edge Detection Adjustment")
@@ -154,27 +156,20 @@ if "pdf" in st.session_state:
                     colors=colors,
                 )
 
-            st.session_state.next_steps.append("테이블 csv 추출")
+            st.session_state.next_steps = ["모든 테이블 인식", "테이블 csv 추출"]
             st.rerun()
     else:
-        # 테이블 수정
-        # if (
-        #     st.sidebar.button("테이블 수정 및 제거")
-        #     or st.session_state.table_to_edit_idx is not None
-        # ):
         table_to_edit = st.sidebar.radio(
             "Select Table to Edit",
             st.session_state.table_boxes,
             key="table_to_edit",
             index=st.session_state.table_to_edit_idx,
             on_change=update_table_to_edit_idx,
-            # args=(im,),
         )
 
         if table_to_edit:
-            print("🩷", "editing a table...")
             if (
-                make_button("테이블 범위 수정", st.session_state.next_steps)
+                make_button("테이블 범위 수정")
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
@@ -197,7 +192,7 @@ if "pdf" in st.session_state:
                     )
                 st.session_state.next_steps = ["수정 완료"]
 
-            if make_button("수정 완료", st.session_state.next_steps):
+            if make_button("수정 완료"):
                 if "canvas" in st.session_state:
                     del st.session_state["canvas"]
 
@@ -211,10 +206,7 @@ if "pdf" in st.session_state:
                 st.session_state.next_steps = ["테이블 추출"]
                 st.rerun()
 
-            if (
-                make_button("테이블 추출", st.session_state.next_steps)
-                or st.session_state.df is not None
-            ):
+            if make_button("테이블 추출") or st.session_state.df is not None:
                 st.session_state.next_steps = [
                     "테이블 csv 저장",
                     "다른 방법으로 재추출",
@@ -238,27 +230,22 @@ if "pdf" in st.session_state:
                         stream=True,
                     )[0]
 
-                # st.dataframe(st.session_state.df, hide_index=True)
                 new_dfs, code = spreadsheet(
                     st.session_state.df, st.session_state.tabula_df
                 )
 
-                # if make_button("다른 방법으로 재추출", st.session_state.next_steps):
-                #     tabula_table = tabula.read_pdf(
-                #         uploaded_file,
-                #         area=[box[1], box[0], box[3], box[2]],
-                #         pages=st.session_state.page_idx,
-                #         multiple_tables=False,
-                #         stream=True,
-                #     )[0]
-                #     st.session_state.df = tabula_table
-                #     st.rerun()
+                if make_button("테이블 csv 저장"):
+                    print(new_dfs)
+                    idx = st.sidebar.radio(
+                        "Select a DataFrame to export",
+                        map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
+                        index=None,
+                        key="df_idx",
+                        on_change=export_to_csv,
+                        args=(new_dfs),
+                    )
 
-                if make_button("테이블 csv 저장", st.session_state.next_steps):
-                    # export_to_csv()
-                    st.session_state.next_steps = [
-                        "테이블 수정 및 제거",
-                    ]
+                    st.session_state.next_steps = ["테이블 수정 및 제거"]
 
         # else:
         #     # 🍎 page 넘기기 버튼?
