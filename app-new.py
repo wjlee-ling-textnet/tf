@@ -18,14 +18,18 @@ if "table_boxes" not in st.session_state:
     st.session_state.table_to_edit_idx = None
     st.session_state.next_steps = ["모든 테이블 인식"]
     st.session_state.df = None
+    st.session_state.save_df_idx = None
 
 
 def turn_page():
     st.session_state.page_idx = st.session_state.user_input_page_idx - 1
+    print("🩷", f"new_page {st.session_state.user_input_page_idx}")
+    print("🩷", f"page_idx: {st.session_state.page_idx}")
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.df = None
+    st.session_state.save_df_idx = None
     st.session_state.next_steps = ["모든 테이블 인식"]
 
 
@@ -101,11 +105,12 @@ def extract_table_content(bbox, padding=5):
 
 
 def export_to_csv(new_dfs):
-    st.download_button(
-        "Download CSV",
-        new_dfs[st.session_state.df_idx].to_csv(index=False),
-        file_name=f"page{st.session_state.page_idx+1}_{st.session_state.df_idx.lstrip('df')}.csv",
-    )
+    if st.session_state.save_df_idx:
+        st.sidebar.download_button(
+            "Download CSV",
+            new_dfs[st.session_state.save_df_idx].to_csv(index=False),
+            file_name=f"page{st.session_state.page_idx+1}_{st.session_state.save_df_idx.lstrip('df')}.csv",
+        )
 
 
 st.title("PDF Table Edge Detection Adjustment")
@@ -225,26 +230,22 @@ if "pdf" in st.session_state:
                     st.session_state.tabula_df = tabula.read_pdf(
                         uploaded_file,
                         area=[box[1], box[0], box[3], box[2]],
-                        pages=st.session_state.page_idx,
+                        pages=st.session_state.user_input_page_idx,
                         multiple_tables=False,
                         stream=True,
                     )[0]
-
                 new_dfs, code = spreadsheet(
                     st.session_state.df, st.session_state.tabula_df
                 )
 
-                if make_button("테이블 csv 저장"):
-                    print(new_dfs)
-                    idx = st.sidebar.radio(
-                        "Select a DataFrame to export",
-                        map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
+                if make_button("테이블 csv 저장") or st.session_state.save_df_idx:
+                    st.sidebar.selectbox(
+                        label="Select a DataFrame to export",
+                        options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
                         index=None,
-                        key="df_idx",
-                        on_change=export_to_csv,
-                        args=(new_dfs),
+                        key="save_df_idx",
                     )
-
+                    export_to_csv(new_dfs)
                     st.session_state.next_steps = ["테이블 수정 및 제거"]
 
         # else:
