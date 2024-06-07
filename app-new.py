@@ -8,6 +8,8 @@ import streamlit as st
 from typing import Union, List
 from PIL import Image, ImageDraw
 from streamlit_drawable_canvas import st_canvas
+from mitosheet.streamlit.v1 import spreadsheet
+
 
 if "table_boxes" not in st.session_state:
     st.session_state.page_idx = 0
@@ -225,21 +227,32 @@ if "pdf" in st.session_state:
                         padding=10,
                     )
                     st.session_state.df = pd.DataFrame(
-                        new_table
+                        new_table,
+                        index=None,
                     )  ## 🍎🍎 TODO: no-index
-
-                st.dataframe(st.session_state.df, hide_index=True)
-
-                if make_button("다른 방법으로 재추출", st.session_state.next_steps):
-                    tabula_table = tabula.read_pdf(
+                    st.session_state.tabula_df = tabula.read_pdf(
                         uploaded_file,
                         area=[box[1], box[0], box[3], box[2]],
-                        pages=0,
+                        pages=st.session_state.page_idx,
                         multiple_tables=False,
                         stream=True,
                     )[0]
-                    st.session_state.df = tabula_table
-                    st.rerun()
+
+                # st.dataframe(st.session_state.df, hide_index=True)
+                new_dfs, code = spreadsheet(
+                    st.session_state.df, st.session_state.tabula_df
+                )
+
+                # if make_button("다른 방법으로 재추출", st.session_state.next_steps):
+                #     tabula_table = tabula.read_pdf(
+                #         uploaded_file,
+                #         area=[box[1], box[0], box[3], box[2]],
+                #         pages=st.session_state.page_idx,
+                #         multiple_tables=False,
+                #         stream=True,
+                #     )[0]
+                #     st.session_state.df = tabula_table
+                #     st.rerun()
 
                 if make_button("테이블 csv 저장", st.session_state.next_steps):
                     # export_to_csv()
