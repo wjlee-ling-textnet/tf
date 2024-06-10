@@ -94,7 +94,7 @@ def extract_images_pdfplumber(page, output_dir: str = "images/") -> list[tuple]:
     ]
     writer = ImageWriter(output_dir)
     for img_idx, img in enumerate(page.images):
-        img["name"] = f"page_{img['page_number']}_idx_{img_idx}"
+        img["name"] = f"page{img['page_number']}_{img_idx}"
         new_info = {key: img[key] for key in keys}
         dict_as_tuple = namedtuple("dict_as_tuple", new_info)
         img_tuple = dict_as_tuple(**new_info)
