@@ -189,6 +189,7 @@ if "pdf" in st.session_state:
                     st.session_state.table_boxes[st.session_state.table_to_edit_idx]
                 )
                 st.session_state.next_steps = ["수정 완료"]
+                st.rerun()
 
     else:
         table_to_edit = st.sidebar.radio(
@@ -205,7 +206,6 @@ if "pdf" in st.session_state:
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
-                print("🍎" * 10)
                 canvas_result = adjust_box(
                     im,
                     st.session_state.table_boxes[st.session_state.table_to_edit_idx],
@@ -275,47 +275,3 @@ if "pdf" in st.session_state:
                     )
                     export_to_csv(new_dfs)
                     st.session_state.next_steps = ["테이블 수정 및 제거"]
-
-        # else:
-        #     # 🍎 page 넘기기 버튼?
-
-        #     st.warning("No edges detected.")
-        #     canvas_result = adjust_box(im)
-        #     st.session_state.table_boxes = [
-        #         (
-        #             box["left"],
-        #             box["top"],
-        #             box["left"] + box["width"],
-        #             box["top"] + box["height"],
-        #         )
-        #         for box in canvas_result.json_data["objects"]  ## 🍎🍎
-        #     ]
-        #     print("🩷 canvas:", canvas_result.json_data["objects"])
-
-        #     ## Tabula
-        #     if st.sidebar.button("Retry Table Detection in Annotated Areas"):
-        #         new_boxes = []
-        #         for box in st.session_state.table_boxes:
-
-        #             # pdfplumber: (left, top, right, bottom) => tabula: (top, left, bottom, right)
-        #             df = tabula.read_pdf(
-        #                 uploaded_file,
-        #                 area=[box[1], box[0], box[3], box[2]],
-        #                 pages=2,
-        #                 multiple_tables=False,
-        #                 stream=True,
-        #             )
-
-        #         # st.session_state.table_boxes = new_boxes
-        #         st.session_state.page_preview = draw_boxes(
-        #             im.original, st.session_state.table_boxes, color="green"
-        #         )  # https://github.com/jsvine/pdfplumber/tree/stable
-        #         # st.image(
-        #         #     updated_image,
-        #         #     caption="Updated Table Edges",
-        #         #     use_column_width=True,
-        #         # )
-
-        #         st.sidebar.markdown("### Updated Bounding Boxes")
-        #         for box in st.session_state.table_boxes:
-        #             st.sidebar.write(box)
