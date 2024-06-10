@@ -1,3 +1,4 @@
+from parsers.image_extract import extract_images_pdfplumber
 from utils.streamlit import make_button
 
 import pdfplumber
@@ -15,8 +16,9 @@ if "table_boxes" not in st.session_state:
     st.session_state.page_idx = 0
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
+    st.session_state.image_boxes = []
     st.session_state.table_to_edit_idx = None
-    st.session_state.next_steps = ["모든 테이블 인식"]
+    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출"]
     st.session_state.df = None
     st.session_state.save_df_idx = None
 
@@ -25,10 +27,11 @@ def turn_page():
     st.session_state.page_idx = st.session_state.user_input_page_idx - 1
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
+    st.session_state.image_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.df = None
     st.session_state.save_df_idx = None
-    st.session_state.next_steps = ["모든 테이블 인식"]
+    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출"]
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -146,6 +149,12 @@ if "pdf" in st.session_state:
             caption=f"page {st.session_state.page_idx + 1}",
             use_column_width=True,
         )
+    ## image 추출
+    if st.session_state.image_boxes == []:
+        if make_button("이미지 추출"):
+            images = extract_images_pdfplumber(page)
+
+    ## table 추출
     if st.session_state.table_boxes == []:
         if make_button("모든 테이블 인식"):
             detected_tables = page.find_tables()

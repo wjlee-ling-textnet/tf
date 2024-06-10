@@ -1,6 +1,7 @@
 import fitz
 
 from pathlib import Path
+from pdfminer.image import ImageWriter
 
 
 def extract_images(pdf_path):
@@ -60,6 +61,53 @@ def extract_and_save_images_from_pdf(pdf_path):
 
     doc.close()
     return output
+
+
+def extract_images_pdfplumber(page, output_dir: str = "images/") -> list[tuple]:
+    """
+    Convert the images metadata to fit the format of pdfminer.six's ImageWriter
+    ref: https://github.com/pdfminer/pdfminer.six/blob/d79bcb75ea08442df0c69af050c0070d0ae036b4/pdfminer/image.py#L72
+    """
+    from collections import namedtuple
+
+    elements = []
+    keys = [
+        "x0",
+        "y0",
+        "x1",
+        "y1",
+        "width",
+        "height",
+        "stream",
+        "srcsize",
+        "imagemask",
+        "bits",
+        "colorspace",
+        "mcid",
+        "tag",
+        "object_type",
+        "page_number",
+        "top",
+        "bottom",
+        "doctop",
+        "name",  ## added for pdfminer.six
+    ]
+    writer = ImageWriter(output_dir)
+    for img_idx, img in enumerate(page.images):
+        img["name"] = f"page_{img['page_number']}_idx_{img_idx}"
+        new_info = {key: img[key] for key in keys}
+        dict_as_tuple = namedtuple("dict_as_tuple", new_info)
+        img_tuple = dict_as_tuple(**new_info)
+        name = writer.export_image(img_tuple)  # save the image bytes
+        element = (
+            img["x0"],
+            img["y0"],
+            img["x1"],
+            img["y1"],
+            output_dir.rstrip("/") + "/" + name,
+        )
+        elements.append(element)
+    return elements
 
 
 # doc = fitz.open(
