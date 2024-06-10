@@ -46,7 +46,6 @@ def adjust_box(_page_image, box=None):
     im_pil = _page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
-
     kwargs = {
         "fill_color": "rgba(255, 165, 0, 0.3)",
         "stroke_width": 2,
@@ -142,7 +141,6 @@ if "pdf" in st.session_state:
         caption=f"page {st.session_state.page_idx + 1}",
         use_column_width=True,
     )
-
     if st.session_state.table_boxes == []:
         if make_button("모든 테이블 인식"):
             detected_tables = page.find_tables()
@@ -158,9 +156,40 @@ if "pdf" in st.session_state:
                     st.session_state.table_boxes,
                     colors=colors,
                 )
+                st.session_state.next_steps = ["모든 테이블 인식", "테이블 csv 추출"]
+                st.rerun()
 
-            st.session_state.next_steps = ["모든 테이블 인식", "테이블 csv 추출"]
-            st.rerun()
+            else:
+                if st.sidebar.button(
+                    "테이블 범위 설정",
+                    on_click=lambda: st.session_state.next_steps.append(
+                        "테이블 범위 설정"
+                    ),
+                ):
+                    pass
+
+        elif "테이블 범위 설정" in st.session_state.next_steps:
+            canvas_result = adjust_box(
+                im,
+            )
+            if canvas_result.json_data is not None and len(
+                canvas_result.json_data["objects"]
+            ):
+                st.session_state.table_to_edit_idx = 0
+                new_box = canvas_result.json_data["objects"][0]
+                st.session_state.table_boxes.append(
+                    (
+                        new_box["left"],
+                        new_box["top"],
+                        new_box["left"] + new_box["width"],
+                        new_box["top"] + new_box["height"],
+                    )
+                )
+                st.sidebar.info(
+                    st.session_state.table_boxes[st.session_state.table_to_edit_idx]
+                )
+                st.session_state.next_steps = ["수정 완료"]
+
     else:
         table_to_edit = st.sidebar.radio(
             "Select Table to Edit",
@@ -176,6 +205,7 @@ if "pdf" in st.session_state:
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
+                print("🍎" * 10)
                 canvas_result = adjust_box(
                     im,
                     st.session_state.table_boxes[st.session_state.table_to_edit_idx],
