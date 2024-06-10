@@ -110,7 +110,11 @@ def export_to_csv(new_dfs):
         )
 
 
+st.set_page_config(layout="wide")
+
 st.title("PDF Table Edge Detection Adjustment")
+col1, col2 = st.columns([0.4, 0.6])
+
 uploaded_file = st.file_uploader(
     "Choose a PDF file", type="pdf", disabled=("pdf" in st.session_state)
 )
@@ -136,11 +140,12 @@ if "pdf" in st.session_state:
         # if the user inputs a new page idx, update the page preview accordingly
         st.session_state.page_preview = im.original
 
-    st.image(
-        st.session_state.page_preview,
-        caption=f"page {st.session_state.page_idx + 1}",
-        use_column_width=True,
-    )
+    with col1:
+        st.image(
+            st.session_state.page_preview,
+            caption=f"page {st.session_state.page_idx + 1}",
+            use_column_width=True,
+        )
     if st.session_state.table_boxes == []:
         if make_button("모든 테이블 인식"):
             detected_tables = page.find_tables()
@@ -169,9 +174,10 @@ if "pdf" in st.session_state:
                     pass
 
         elif "테이블 범위 설정" in st.session_state.next_steps:
-            canvas_result = adjust_box(
-                im,
-            )
+            with col2:
+                canvas_result = adjust_box(
+                    im,
+                )
             if canvas_result.json_data is not None and len(
                 canvas_result.json_data["objects"]
             ):
@@ -206,10 +212,13 @@ if "pdf" in st.session_state:
                 or "canvas" in st.session_state
                 # need this condition because the widget box is created after running 'adjust_box' more than two times
             ):
-                canvas_result = adjust_box(
-                    im,
-                    st.session_state.table_boxes[st.session_state.table_to_edit_idx],
-                )
+                with col2:
+                    canvas_result = adjust_box(
+                        im,
+                        st.session_state.table_boxes[
+                            st.session_state.table_to_edit_idx
+                        ],
+                    )
                 if canvas_result.json_data is not None and len(
                     canvas_result.json_data["objects"]
                 ):
@@ -262,9 +271,10 @@ if "pdf" in st.session_state:
                         multiple_tables=False,
                         stream=True,
                     )[0]
-                new_dfs, code = spreadsheet(
-                    st.session_state.df, st.session_state.tabula_df
-                )
+                with col2:
+                    new_dfs, code = spreadsheet(
+                        st.session_state.df, st.session_state.tabula_df
+                    )
 
                 if make_button("테이블 csv 저장") or st.session_state.save_df_idx:
                     st.sidebar.selectbox(
