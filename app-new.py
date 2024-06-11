@@ -363,5 +363,7 @@ if "pdf" in st.session_state:
                 elements, save_root_dir=st.session_state.save_root_dir
             )
             with col2:
+                if "canvas" in st.session_state:
+                    del st.session_state["canvas"]
                 st.text(markdown)
             st.info(markdown)
