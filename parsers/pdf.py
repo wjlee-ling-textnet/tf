@@ -111,6 +111,23 @@ def _join_text_boxes(prev_boxes: list[tuple], curr_box: tuple) -> list[tuple]:
         return prev_boxes
 
 
+def construct_markdown_from_elements(elements: list, save_root_dir: Path):
+    "Given elements, sorted by their bounding box, reconstruct a page in markdown format by removing the bounding box information."
+    page_content = ""
+    for element in elements:
+        if type(element[4]) == str:
+            page_content += element[4]
+        else:
+            page_content += _create_hyperlink(
+                str(element[4]), save_root_dir=save_root_dir
+            )
+
+        if not page_content.endswith("\n"):
+            page_content += "\n"
+
+    return page_content
+
+
 def get_plaintext_boxes_pdfplumber(texts: list[dict], tables: list[tuple]):
     """
     Remove duplicate text boxes that are overlapped with table boxes.
@@ -141,19 +158,11 @@ def get_plaintext_boxes_pdfplumber(texts: list[dict], tables: list[tuple]):
                 break
 
         if not overlap:
-            plaintexts.append((x0, top, x1, bottom, text, size, fontname))
-            # plaintexts = _join_text_boxes(plaintexts, (x0, top, x1, bottom, text, size))
+            plaintexts = _join_text_boxes(
+                plaintexts, (x0, top, x1, bottom, text, size, fontname)
+            )
 
     return plaintexts
-
-
-def get_plaintext_boxes_as_string(plaintexts: list[tuple]):
-    from functools import reduce
-
-    plaintexts_as_string = reduce(
-        lambda acc, curr: acc + "\n" + curr[4], plaintexts, ""
-    )
-    return plaintexts_as_string
 
 
 def extract_elements_fitz(
