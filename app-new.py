@@ -1,4 +1,5 @@
 from parsers.image_extract import extract_images_pdfplumber
+from parsers.pdf import get_plaintext_boxes_pdfplumber, get_plaintext_boxes_as_string
 from utils.streamlit import make_button
 
 import pdfplumber
@@ -17,8 +18,9 @@ if "table_boxes" not in st.session_state:
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
     st.session_state.image_boxes = []
+    st.session_state.plaintext_boxes = []
     st.session_state.table_to_edit_idx = None
-    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출"]
+    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
     st.session_state.df = None
     st.session_state.save_df_idx = None
 
@@ -28,10 +30,11 @@ def turn_page():
     st.session_state.page_preview = None
     st.session_state.table_boxes = []
     st.session_state.image_boxes = []
+    st.session_state.plaintext_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.df = None
     st.session_state.save_df_idx = None
-    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출"]
+    st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -261,6 +264,7 @@ if "pdf" in st.session_state:
                 st.session_state.next_steps = [
                     "테이블 csv 저장",
                     "다른 방법으로 재추출",
+                    "텍스트 추출",
                 ]
 
                 box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
@@ -284,7 +288,6 @@ if "pdf" in st.session_state:
                     new_dfs, code = spreadsheet(
                         st.session_state.df, st.session_state.tabula_df
                     )
-
                 if make_button("테이블 csv 저장") or st.session_state.save_df_idx:
                     st.sidebar.selectbox(
                         label="Select a DataFrame to export",
@@ -293,4 +296,20 @@ if "pdf" in st.session_state:
                         key="save_df_idx",
                     )
                     export_to_csv(new_dfs)
-                    st.session_state.next_steps = ["테이블 수정 및 제거"]
+                    st.session_state.next_steps = ["테이블 수정 및 제거", "텍스트 추출"]
+
+    if st.session_state.table_boxes:
+        if make_button("텍스트 추출"):
+            plaintext_boxes = page.extract_words(
+                # layout=True,
+                x_tolerance=2,
+                extra_attrs=["fontname", "size"],
+            )
+            st.session_state.plaintext_boxes = get_plaintext_boxes_pdfplumber(
+                plaintext_boxes, st.session_state.table_boxes
+            )  ## TODO: table의 경우 마크다운으로 추출
+
+            plaintext_boxes_str = get_plaintext_boxes_as_string(
+                st.session_state.plaintext_boxes
+            )
+            st.warning(plaintext_boxes_str)
