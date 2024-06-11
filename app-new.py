@@ -1,5 +1,9 @@
 from parsers.image_extract import extract_images_pdfplumber
-from parsers.pdf import get_plaintext_boxes_pdfplumber, get_plaintext_boxes_as_string
+from parsers.pdf import (
+    get_plaintext_boxes_pdfplumber,
+    sort_elements_by_bbox,
+    reconstruct_page_from_elements,
+)
 from utils.streamlit import make_button
 
 import pdfplumber
@@ -318,19 +322,15 @@ if "pdf" in st.session_state:
                         ],
                         new_dfs[st.session_state.target_df_name].to_markdown(),
                     )
+                    st.session_state.next_steps = ["텍스트 추출"]
+                    st.rerun()
 
-    if st.session_state.table_boxes:
-        if make_button("텍스트 추출") or st.session_state.plaintext_boxes:
-            plaintext_boxes = page.extract_words(
-                # layout=True,
-                x_tolerance=2,
-                extra_attrs=["fontname", "size"],
-            )
-            st.session_state.plaintext_boxes = get_plaintext_boxes_pdfplumber(
-                plaintext_boxes, st.session_state.table_boxes
-            )  ## TODO: table의 경우 마크다운으로 추출
-
-            plaintext_boxes_str = get_plaintext_boxes_as_string(
-                st.session_state.plaintext_boxes
-            )
-            st.warning(plaintext_boxes_str)
+    if make_button("텍스트 추출"):
+        plaintext_boxes = page.extract_words(
+            # layout=True,
+            x_tolerance=2,
+            extra_attrs=["fontname", "size"],
+        )
+        st.session_state.plaintext_boxes = get_plaintext_boxes_pdfplumber(
+            texts=plaintext_boxes, tables=st.session_state.table_boxes
+        )
