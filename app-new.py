@@ -91,7 +91,7 @@ def update_table_to_edit_idx():
             st.session_state.table_to_edit
         )
         st.session_state.next_steps = ["테이블 범위 수정", "테이블 추출"]
-        st.session_state.df = None
+        st.session_state.df = None  # to export new dataframes of a new table
 
 
 def extract_table_content(bbox, padding=5):
@@ -310,10 +310,12 @@ if "pdf" in st.session_state:
                     export_to_csv(new_dfs)
 
                 if make_button("마크다운 변환"):
-                    st.session_state.table_boxes[
-                        int(st.session_state.target_df_name.strip("df")) - 1
-                    ] = new_dfs[st.session_state.target_df_name].to_markdown()
-                    # st.warning(st.session_state.table_boxes)
+                    st.session_state.table_boxes[st.session_state.table_to_edit_idx] = (
+                        *st.session_state.table_boxes[
+                            st.session_state.table_to_edit_idx
+                        ],
+                        new_dfs[st.session_state.target_df_name].to_markdown(),
+                    )
 
     if st.session_state.table_boxes:
         if make_button("텍스트 추출") or st.session_state.plaintext_boxes:
