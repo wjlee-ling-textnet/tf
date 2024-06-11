@@ -223,7 +223,8 @@ if "pdf" in st.session_state:
                 st.session_state.next_steps = ["수정 완료"]
                 st.rerun()
 
-    else:
+    elif "페이지 마크다운 작성" not in st.session_state.next_steps:
+        ## 테이블 추출하고 텍스트 추출할 때는 안나오게 하기
         table_to_edit = st.sidebar.radio(
             "Select Table to Edit",
             st.session_state.table_boxes,
@@ -341,19 +342,20 @@ if "pdf" in st.session_state:
         st.session_state.plaintext_boxes = get_plaintext_boxes_pdfplumber(
             texts=plaintext_boxes, tables=st.session_state.table_boxes
         )
+        st.session_state.next_steps = ["페이지 마크다운 작성"]
 
     if (
         st.session_state.plaintext_boxes
         or st.session_state.table_boxes
         or st.session_state.image_boxes
     ):
-        st.session_state.next_steps = [
-            "페이지 마크다운 작성",
-            "이미지 추출",
-            "텍스트 추출",
-            "모든 테이블 인식",
-        ]
         if make_button("페이지 마크다운 작성"):
+            st.session_state.next_steps = [
+                "페이지 마크다운 작성",
+                "이미지 추출",
+                "텍스트 추출",
+                "모든 테이블 인식",
+            ]
             elements = sort_elements_by_bbox(
                 st.session_state.plaintext_boxes
                 + st.session_state.table_boxes
@@ -363,7 +365,5 @@ if "pdf" in st.session_state:
                 elements, save_root_dir=st.session_state.save_root_dir
             )
             with col2:
-                if "canvas" in st.session_state:
-                    del st.session_state["canvas"]
                 st.text(markdown)
-            st.info(markdown)
+            st.info(elements)
