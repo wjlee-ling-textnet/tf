@@ -344,15 +344,20 @@ if "pdf" in st.session_state:
         or st.session_state.table_boxes
         or st.session_state.image_boxes
     ):
+        st.session_state.next_steps = [
+            "페이지 마크다운 작성",
+            "이미지 추출",
+            "텍스트 추출",
+            "모든 테이블 인식",
+        ]
         if make_button("페이지 마크다운 작성"):
             elements = sort_elements_by_bbox(
                 st.session_state.plaintext_boxes
                 + st.session_state.table_boxes
                 + st.session_state.image_boxes
             )
-
             markdown = reconstruct_page_from_elements(
                 elements, save_root_dir=st.session_state.save_root_dir
             )
-
-            print(markdown)
+            with col2:
+                st.text(markdown)
