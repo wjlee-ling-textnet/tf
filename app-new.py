@@ -22,7 +22,7 @@ if "table_boxes" not in st.session_state:
     st.session_state.table_to_edit_idx = None
     st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
     st.session_state.df = None
-    st.session_state.save_df_idx = None
+    st.session_state.target_df_name = None
 
 
 def turn_page():
@@ -33,7 +33,7 @@ def turn_page():
     st.session_state.plaintext_boxes = []
     st.session_state.table_to_edit_idx = None
     st.session_state.df = None
-    st.session_state.save_df_idx = None
+    st.session_state.target_df_name = None
     st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
 
 
@@ -108,10 +108,10 @@ def extract_table_content(bbox, padding=5):
 
 
 def export_to_csv(new_dfs):
-    if st.session_state.save_df_idx:
+    if st.session_state.target_df_name:
         st.sidebar.download_button(
             "Download CSV",
-            new_dfs[st.session_state.save_df_idx].to_csv(index=False),
+            new_dfs[st.session_state.target_df_name].to_csv(index=False),
             file_name=f"page{st.session_state.page_idx+1}_{st.session_state.table_to_edit_idx+1}.csv",
         )
 
@@ -261,11 +261,10 @@ if "pdf" in st.session_state:
                 st.rerun()
 
             if make_button("테이블 추출") or st.session_state.df is not None:
-                st.session_state.next_steps = [
-                    "테이블 csv 저장",
-                    "다른 방법으로 재추출",
-                    "텍스트 추출",
-                ]
+                # st.session_state.next_steps = [
+                #     "텍스트 추출",
+                #     "테이블 마크다운 변환",
+                # ]
 
                 box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
                 if st.session_state.df is None:
@@ -288,17 +287,25 @@ if "pdf" in st.session_state:
                     new_dfs, code = spreadsheet(
                         st.session_state.df, st.session_state.tabula_df
                     )
-                if make_button("테이블 csv 저장") or st.session_state.save_df_idx:
-                    st.sidebar.selectbox(
-                        label="Select a DataFrame to export",
-                        options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
-                        index=None,
-                        key="save_df_idx",
-                    )
+
+                st.session_state.target_df_name = st.sidebar.selectbox(
+                    label="Select a DataFrame to process further",
+                    options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
+                    index=(
+                        int(st.session_state.target_df_name.strip("df")) - 1
+                        if st.session_state.target_df_name
+                        else None
+                    ),
+                    on_change=lambda: st.session_state.next_steps.append(
+                        "테이블 csv 저장"
+                    ),
+                )
+
+                if make_button("테이블 csv 저장"):
                     export_to_csv(new_dfs)
 
     if st.session_state.table_boxes:
-        if make_button("텍스트 추출"):
+        if make_button("텍스트 추출") or st.session_state.plaintext_boxes:
             plaintext_boxes = page.extract_words(
                 # layout=True,
                 x_tolerance=2,
