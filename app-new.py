@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 
 from typing import Union, List
+from pathlib import Path
 from PIL import Image, ImageDraw
 from streamlit_drawable_canvas import st_canvas
 from mitosheet.streamlit.v1 import spreadsheet
@@ -131,10 +132,12 @@ uploaded_file = st.file_uploader(
 )
 if uploaded_file:
     st.session_state.pdf = pdfplumber.open(uploaded_file)
-    st.session_state.save_root_dir = os.path.join(
-        os.path.expanduser("~"),
-        "Downloads",
-        uploaded_file.name.replace(" ", "_").replace(".pdf", ""),
+    st.session_state.save_root_dir = Path(
+        os.path.join(
+            os.path.expanduser("~"),
+            "Downloads",
+            uploaded_file.name.replace(" ", "_").replace(".pdf", ""),
+        )
     )
 if "pdf" in st.session_state:
     st.sidebar.title("Adjust Table Edges")
@@ -165,7 +168,7 @@ if "pdf" in st.session_state:
     if st.session_state.image_boxes == []:
         if make_button("이미지 추출"):
             st.session_state.image_boxes = extract_images_pdfplumber(
-                page, output_dir=os.path.join(st.session_state.save_root_dir, "images")
+                page, output_dir=st.session_state.save_root_dir / "images"
             )  # returns a list of (x0, y0, x1, y1, image_path)
 
     ## table 추출
@@ -361,3 +364,4 @@ if "pdf" in st.session_state:
             )
             with col2:
                 st.text(markdown)
+            st.info(markdown)

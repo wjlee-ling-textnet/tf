@@ -104,7 +104,8 @@ def extract_images_pdfplumber(page, output_dir: str = "images/") -> list[tuple]:
             img["top"],
             img["x1"],
             img["top"] + img["height"],
-            output_dir.rstrip("/") + "/" + name,
+            output_dir / name,
+            # output_dir.rstrip("/") + "/" + name,
         )
         elements.append(element)
     return elements
