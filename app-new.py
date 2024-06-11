@@ -296,7 +296,6 @@ if "pdf" in st.session_state:
                         key="save_df_idx",
                     )
                     export_to_csv(new_dfs)
-                    st.session_state.next_steps = ["테이블 수정 및 제거", "텍스트 추출"]
 
     if st.session_state.table_boxes:
         if make_button("텍스트 추출"):
