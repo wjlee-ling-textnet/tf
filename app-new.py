@@ -91,6 +91,7 @@ def update_table_to_edit_idx():
             st.session_state.table_to_edit
         )
         st.session_state.next_steps = ["테이블 범위 수정", "테이블 추출"]
+        st.session_state.df = None
 
 
 def extract_table_content(bbox, padding=5):
@@ -296,13 +297,23 @@ if "pdf" in st.session_state:
                         if st.session_state.target_df_name
                         else None
                     ),
-                    on_change=lambda: st.session_state.next_steps.append(
-                        "테이블 csv 저장"
+                    on_change=lambda: (
+                        st.session_state.next_steps.extend(
+                            ["csv 저장", "마크다운 변환"]
+                        )
+                        if "csv 저장" not in st.session_state.next_steps
+                        else None
                     ),
                 )
 
-                if make_button("테이블 csv 저장"):
+                if make_button("csv 저장"):
                     export_to_csv(new_dfs)
+
+                if make_button("마크다운 변환"):
+                    st.session_state.table_boxes[
+                        int(st.session_state.target_df_name.strip("df")) - 1
+                    ] = new_dfs[st.session_state.target_df_name].to_markdown()
+                    # st.warning(st.session_state.table_boxes)
 
     if st.session_state.table_boxes:
         if make_button("텍스트 추출") or st.session_state.plaintext_boxes:
