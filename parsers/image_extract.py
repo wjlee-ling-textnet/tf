@@ -101,9 +101,9 @@ def extract_images_pdfplumber(page, output_dir: str = "images/") -> list[tuple]:
         name = writer.export_image(img_tuple)  # save the image bytes
         element = (
             img["x0"],
-            img["y0"],
+            img["top"],
             img["x1"],
-            img["y1"],
+            img["top"] + img["height"],
             output_dir.rstrip("/") + "/" + name,
         )
         elements.append(element)
