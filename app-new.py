@@ -6,6 +6,7 @@ from parsers.pdf import (
 )
 from utils.streamlit import make_button
 
+import os
 import pdfplumber
 import tabula
 import pandas as pd
@@ -99,7 +100,7 @@ def update_table_to_edit_idx():
 
 
 def extract_table_content(bbox, padding=5):
-    """bbox가 너무 타이트하면 바깥쪽 셀 내용은 추출 못함"""
+    """bbox가 너무 타이트하면 바깥쪽 셀 내용은 추출 못함으로 패딩을 넣어 추출"""
     extended_bbox = (
         bbox[0] - padding if bbox[0] - padding > 0 else 0,
         bbox[1] - padding if bbox[1] - padding > 0 else 0,
@@ -130,7 +131,11 @@ uploaded_file = st.file_uploader(
 )
 if uploaded_file:
     st.session_state.pdf = pdfplumber.open(uploaded_file)
-
+    st.session_state.save_root_dir = os.path.join(
+        os.path.expanduser("~"),
+        "Downloads",
+        uploaded_file.name.replace(" ", "_").replace(".pdf", ""),
+    )
 if "pdf" in st.session_state:
     st.sidebar.title("Adjust Table Edges")
 
@@ -160,8 +165,8 @@ if "pdf" in st.session_state:
     if st.session_state.image_boxes == []:
         if make_button("이미지 추출"):
             st.session_state.image_boxes = extract_images_pdfplumber(
-                page
-            )  # (x0, y0, x1, y1, image_path)
+                page, output_dir=os.path.join(st.session_state.save_root_dir, "images")
+            )  # returns a list of (x0, y0, x1, y1, image_path)
 
     ## table 추출
     if st.session_state.table_boxes == []:
@@ -333,3 +338,21 @@ if "pdf" in st.session_state:
         st.session_state.plaintext_boxes = get_plaintext_boxes_pdfplumber(
             texts=plaintext_boxes, tables=st.session_state.table_boxes
         )
+
+    if (
+        st.session_state.plaintext_boxes
+        or st.session_state.table_boxes
+        or st.session_state.image_boxes
+    ):
+        if make_button("페이지 마크다운 작성"):
+            elements = sort_elements_by_bbox(
+                st.session_state.plaintext_boxes
+                + st.session_state.table_boxes
+                + st.session_state.image_boxes
+            )
+
+            markdown = reconstruct_page_from_elements(
+                elements, save_root_dir=st.session_state.save_root_dir
+            )
+
+            print(markdown)
