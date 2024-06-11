@@ -100,12 +100,11 @@ def update_table_to_edit_idx():
 
 def extract_table_content(bbox, padding=5):
     """bbox가 너무 타이트하면 바깥쪽 셀 내용은 추출 못함"""
-    # 🍎 page 범위 내로 패딩
     extended_bbox = (
-        bbox[0] - padding,
-        bbox[1] - padding,
-        bbox[2] + padding,
-        bbox[3] + padding,
+        bbox[0] - padding if bbox[0] - padding > 0 else 0,
+        bbox[1] - padding if bbox[1] - padding > 0 else 0,
+        bbox[2] + padding if bbox[2] + padding < page.width else page.width,
+        bbox[3] + padding if bbox[3] + padding < page.height else page.height,
     )
     cropped_page = page.within_bbox(extended_bbox)
     new_table = cropped_page.extract_table()
