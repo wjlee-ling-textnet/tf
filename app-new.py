@@ -156,7 +156,9 @@ if "pdf" in st.session_state:
     ## image 추출
     if st.session_state.image_boxes == []:
         if make_button("이미지 추출"):
-            st.session_state.image_boxes = extract_images_pdfplumber(page)
+            st.session_state.image_boxes = extract_images_pdfplumber(
+                page
+            )  # (x0, y0, x1, y1, image_path)
 
     ## table 추출
     if st.session_state.table_boxes == []:

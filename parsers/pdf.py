@@ -112,16 +112,20 @@ def _join_text_boxes(prev_boxes: list[tuple], curr_box: tuple) -> list[tuple]:
 
 
 def get_plaintext_boxes_pdfplumber(texts: list[dict], tables: list[tuple]):
+    """
+    Remove duplicate text boxes that are overlapped with table boxes.
+    """
     plaintexts = []
     for text_dict in texts:
-        text, x0, top, x1, bottom, size = (
+        text, x0, top, x1, bottom, size, fontname = (
             text_dict["text"],
             text_dict["x0"],
             text_dict["top"],
             text_dict["x1"],
             text_dict["bottom"],
             text_dict["size"],
-        )
+            text_dict["fontname"],
+        )  # additionally available: 'doctop', 'upright', 'height', 'width', 'direction'
 
         # check if overlaps with any table
         overlap = False
@@ -137,7 +141,8 @@ def get_plaintext_boxes_pdfplumber(texts: list[dict], tables: list[tuple]):
                 break
 
         if not overlap:
-            plaintexts = _join_text_boxes(plaintexts, (x0, top, x1, bottom, text, size))
+            plaintexts.append((x0, top, x1, bottom, text, size, fontname))
+            # plaintexts = _join_text_boxes(plaintexts, (x0, top, x1, bottom, text, size))
 
     return plaintexts
 
