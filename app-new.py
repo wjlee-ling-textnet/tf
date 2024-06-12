@@ -127,7 +127,7 @@ def export_to_csv(new_dfs):
 
 st.set_page_config(layout="wide")
 
-st.title("PDF Table Edge Detection Adjustment")
+st.title("PDF-Markdown Converter")
 col1, col2 = st.columns([0.4, 0.6])
 
 uploaded_file = st.file_uploader(
@@ -146,7 +146,7 @@ if uploaded_file:
         st.session_state.save_root_dir.mkdir(parents=False)
 
 if "pdf" in st.session_state:
-    st.sidebar.title("Adjust Table Edges")
+    st.sidebar.title("페이지별 요소 추출")
 
     page_idx = st.sidebar.number_input(
         "페이지 쪽수",
