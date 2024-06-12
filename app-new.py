@@ -53,7 +53,7 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
     if boxes is not None:
         draw = ImageDraw.Draw(image)
         for box, color in zip(boxes, colors):
-            draw.rectangle(box, outline=color, width=2)
+            draw.rectangle(box[:4], outline=color, width=2)
     return image
 
 
@@ -240,16 +240,15 @@ if "pdf" in st.session_state:
                 )
                 st.session_state.next_steps = ["수정 완료"]
                 st.rerun()
-    else:
-        # elif "페이지 마크다운 작성" not in st.session_state.next_steps:
-        table_to_edit = st.sidebar.radio(
+    elif "페이지 마크다운 작성" not in st.session_state.next_steps:
+        # else:
+        table_to_edit = st.sidebar.selectbox(
             "Select Table to Edit",
             st.session_state.table_boxes,
             key="table_to_edit",
             index=st.session_state.table_to_edit_idx,
             on_change=update_table_to_edit_idx,
         )
-
         if table_to_edit:
             if (
                 make_button("테이블 범위 수정")
