@@ -102,6 +102,14 @@ def update_table_to_edit_idx():
         st.session_state.next_steps = ["테이블 범위 수정", "테이블 추출"]
         st.session_state.df = None  # to export new dataframes of a new table
 
+        colors = ["blue"] * len(st.session_state.table_boxes)
+        colors[st.session_state.table_to_edit_idx] = "red"
+        st.session_state.page_preview = draw_boxes(
+            im.original,
+            st.session_state.table_boxes,
+            colors=colors,
+        )
+
 
 def extract_table_content(bbox, padding=5):
     """bbox가 너무 타이트하면 바깥쪽 셀 내용은 추출 못함으로 패딩을 넣어 추출"""
