@@ -236,9 +236,8 @@ if "pdf" in st.session_state:
                 )
                 st.session_state.next_steps = ["수정 완료"]
                 st.rerun()
-
-    elif "페이지 마크다운 작성" not in st.session_state.next_steps:
-        ## 테이블 추출하고 텍스트 추출할 때는 안나오게 하기
+    else:
+        # elif "페이지 마크다운 작성" not in st.session_state.next_steps:
         table_to_edit = st.sidebar.radio(
             "Select Table to Edit",
             st.session_state.table_boxes,
@@ -363,9 +362,9 @@ if "pdf" in st.session_state:
         or st.session_state.table_boxes
         or st.session_state.image_boxes
     ):
-        if make_button("페이지 마크다운 작성"):
+        if make_button("페이지 마크다운 작성") or st.session_state.markdown:
+            st.session_state.table_to_edit_idx = None
             st.session_state.next_steps = [
-                "페이지 마크다운 작성",
                 "이미지 추출",
                 "텍스트 추출",
                 "모든 테이블 인식",
@@ -378,16 +377,15 @@ if "pdf" in st.session_state:
             st.session_state.markdown = reconstruct_page_from_elements(
                 elements, save_root_dir=st.session_state.save_root_dir
             )
-        if st.session_state.markdown:
-            with col2:
-                text_editor = st_quill(st.session_state.markdown)
-            st.session_state.next_steps = ["페이지 마크다운 저장"]
-            if make_button("페이지 마크다운 저장"):
-                page_save_path = (
-                    st.session_state.save_root_dir
-                    / f"page{st.session_state.page_idx+1}.md"
-                )
-                with page_save_path.open("w") as f:
-                    f.write(text_editor)
+            if st.session_state.markdown:
+                with col2:
+                    text_editor = st_quill(st.session_state.markdown, key="text_editor")
+                if make_button("페이지 마크다운 저장"):
+                    page_save_path = (
+                        st.session_state.save_root_dir
+                        / f"page{st.session_state.page_idx+1}.md"
+                    )
+                    with page_save_path.open("w") as f:
+                        f.write(text_editor)
 
             # st.info(elements)
