@@ -20,6 +20,7 @@ streamlit = "^1.35.0"
 streamlit-drawable-canvas = "^0.9.3"
 tabula-py = "^2.9.3"
 mitosheet = "^0.1.575"
+streamlit-quill = "^0.0.3"
 
 
 [build-system]

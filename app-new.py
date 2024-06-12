@@ -16,6 +16,7 @@ from typing import Union, List
 from pathlib import Path
 from PIL import Image, ImageDraw
 from streamlit_drawable_canvas import st_canvas
+from streamlit_quill import st_quill
 from mitosheet.streamlit.v1 import spreadsheet
 
 
@@ -29,6 +30,7 @@ if "table_boxes" not in st.session_state:
     st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
     st.session_state.df = None
     st.session_state.target_df_name = None
+    st.session_state.markdown = None
 
 
 def turn_page():
@@ -41,6 +43,7 @@ def turn_page():
     st.session_state.df = None
     st.session_state.target_df_name = None
     st.session_state.next_steps = ["모든 테이블 인식", "이미지 추출", "텍스트 추출"]
+    st.session_state.markdown = None
 
 
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
@@ -361,9 +364,11 @@ if "pdf" in st.session_state:
                 + st.session_state.table_boxes
                 + st.session_state.image_boxes
             )
-            markdown = reconstruct_page_from_elements(
+            st.session_state.markdown = reconstruct_page_from_elements(
                 elements, save_root_dir=st.session_state.save_root_dir
             )
+        if st.session_state.markdown:
             with col2:
-                st.text(markdown)
-            st.info(elements)
+                text_editor = st_quill(st.session_state.markdown)
+
+            # st.info(elements)
