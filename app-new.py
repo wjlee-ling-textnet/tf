@@ -185,6 +185,10 @@ if "pdf" in st.session_state:
                 page, output_dir=st.session_state.save_root_dir / "images"
             )  # returns a list of (x0, y0, x1, y1, image_path)
 
+            with st.sidebar.popover("추출한 이미지 확인"):
+                for box in st.session_state.image_boxes:
+                    st.image(str(box[4]), use_column_width="auto")
+
     ## table 추출
     if st.session_state.table_boxes == []:
         if make_button("모든 테이블 인식"):
