@@ -133,6 +133,18 @@ def export_to_csv(new_dfs):
         )
 
 
+def check_process(boxes: list[tuple]):
+    """
+    Before constructing the final markdown of a page, check if each bounding box consists of more than 4 elements (coordinates), meaning that it has been parsed and processed.
+    """
+    if boxes:
+        for box in boxes:
+            if len(box) <= 4:
+                st.warning("검수 및 마크다운 전환이 되지 않은 요소가 있습니다.")
+                return False
+    return True
+
+
 st.set_page_config(layout="wide")
 
 st.title("PDF-Markdown Converter")
@@ -240,7 +252,7 @@ if "pdf" in st.session_state:
                 )
                 st.session_state.next_steps = ["수정 완료"]
                 st.rerun()
-    elif "페이지 마크다운 작성" not in st.session_state.next_steps:
+    else:
         # else:
         table_to_edit = st.sidebar.selectbox(
             "Select Table to Edit",
@@ -361,9 +373,9 @@ if "pdf" in st.session_state:
         st.session_state.next_steps = ["페이지 마크다운 작성"]
 
     if (
-        st.session_state.plaintext_boxes
-        or st.session_state.table_boxes
-        or st.session_state.image_boxes
+        check_process(st.session_state.plaintext_boxes)
+        and check_process(st.session_state.table_boxes)
+        and check_process(st.session_state.image_boxes)
     ):
         if make_button("페이지 마크다운 작성") or st.session_state.markdown:
             st.session_state.table_to_edit_idx = None
@@ -383,6 +395,7 @@ if "pdf" in st.session_state:
             if st.session_state.markdown:
                 with col2:
                     text_editor = st_quill(st.session_state.markdown, key="text_editor")
+                st.session_state.next_steps = ["페이지 마크다운 저장"]
                 if make_button("페이지 마크다운 저장"):
                     page_save_path = (
                         st.session_state.save_root_dir
