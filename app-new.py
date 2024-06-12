@@ -4,7 +4,7 @@ from parsers.pdf import (
     sort_elements_by_bbox,
     reconstruct_page_from_elements,
 )
-from utils.streamlit import make_button
+from utils.streamlit import make_button, choose_delete_false_positives
 
 import os
 import pdfplumber
@@ -254,6 +254,14 @@ if "pdf" in st.session_state:
                 st.rerun()
     else:
         # else:
+        false_positives = choose_delete_false_positives(st.session_state.table_boxes)
+        if st.session_state.table_boxes == []:
+            st.session_state.next_steps = [
+                "모든 테이블 인식",
+                "이미지 추출",
+                "텍스트 추출",
+            ]
+
         table_to_edit = st.sidebar.selectbox(
             "Select Table to Edit",
             st.session_state.table_boxes,
