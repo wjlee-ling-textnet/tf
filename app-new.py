@@ -142,6 +142,9 @@ if uploaded_file:
             uploaded_file.name.replace(" ", "_").replace(".pdf", ""),
         )
     )
+    if not st.session_state.save_root_dir.exists():
+        st.session_state.save_root_dir.mkdir(parents=False)
+
 if "pdf" in st.session_state:
     st.sidebar.title("Adjust Table Edges")
 
@@ -370,5 +373,13 @@ if "pdf" in st.session_state:
         if st.session_state.markdown:
             with col2:
                 text_editor = st_quill(st.session_state.markdown)
+            st.session_state.next_steps = ["페이지 마크다운 저장"]
+            if make_button("페이지 마크다운 저장"):
+                page_save_path = (
+                    st.session_state.save_root_dir
+                    / f"page{st.session_state.page_idx+1}.md"
+                )
+                with page_save_path.open("w") as f:
+                    f.write(text_editor)
 
             # st.info(elements)
