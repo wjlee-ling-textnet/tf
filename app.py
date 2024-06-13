@@ -45,7 +45,10 @@ def _turn_page():
 
 st.set_page_config(layout="wide")
 st.title("PDF-Markdown Converter")
-status_placeholder = st.empty()
+with st.expander(
+    label=f"status: {sst.phase if 'phase' in sst and sst.phase is not None else ''}"
+):
+    status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
 preview_col = preview_col.empty()
 # if "add_canvas" not in sst and "adjust_canvas" not in sst:
@@ -156,7 +159,7 @@ elif "markdown" not in sst:
             on_change=update_edit_idx,
             args=(im.original,),
         )
-
+        status_placeholder.write(element_to_edit)
         if element_to_edit:
             if (
                 st.sidebar.button(

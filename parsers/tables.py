@@ -73,7 +73,7 @@ def export_to_markdown(candidate_dfs):
         *bbox[:4],
         candidate_dfs[sst.md_candidate_name].to_markdown(),
     )
-    sst.phase = None
+    sst.phase = "마크다운 변환"
 
 
 def extract_tables_per_page_fitz(
