@@ -41,10 +41,12 @@ def extract_images_per_page(page, output_dir: str = "images/") -> None:
             img["top"] + img["height"],
         )
         img["name"] = f"page{img['page_number']}_{element}"
-        new_info = {key: img[key] for key in keys}
-        dict_as_tuple = namedtuple("dict_as_tuple", new_info)
-        img_tuple = dict_as_tuple(**new_info)
-        writer.export_image(img_tuple)
+        file_path = output_dir / f"{img['name']}.jpg"
+        if not file_path.is_file():
+            new_info = {key: img[key] for key in keys}
+            dict_as_tuple = namedtuple("dict_as_tuple", new_info)
+            img_tuple = dict_as_tuple(**new_info)
+            writer.export_image(img_tuple)
 
 
 def _format_image_bbox(img_path):
