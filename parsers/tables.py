@@ -19,6 +19,20 @@ def extract_table_coordinates_per_page(page, output_dir) -> list:
     # return coordinates
 
 
+def load_table_coordinates_per_page(page_idx, output_dir) -> list:
+    table_files = list(output_dir.glob(f"page_{page_idx}.pkl"))
+    coordinates = []
+    for table_file in table_files:
+        with table_file.open("rb") as f:
+            while True:
+                try:
+                    bbox = pickle.load(f)
+                    coordinates.append(bbox)
+                except EOFError:
+                    break
+    return coordinates
+
+
 def extract_tables_per_page_fitz(
     page,
     *,

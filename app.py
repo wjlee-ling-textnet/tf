@@ -1,5 +1,8 @@
 from parsers.images import extract_images_per_page, load_image_bboxes_per_page
-from parsers.tables import extract_table_coordinates_per_page
+from parsers.tables import (
+    extract_table_coordinates_per_page,
+    load_table_coordinates_per_page,
+)
 
 import os
 import pdfplumber
@@ -82,4 +85,8 @@ elif "markdown" not in sst:
 
     sst.image_bboxes = load_image_bboxes_per_page(
         sst.page_idx + 1, sst.root_dir / "images"
+    )
+
+    sst.table_bboxes = load_table_coordinates_per_page(
+        sst.page_idx + 1, sst.root_dir / "tables"
     )
