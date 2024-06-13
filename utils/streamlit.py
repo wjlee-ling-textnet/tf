@@ -22,6 +22,7 @@ def choose_delete_false_positives(boxes: list[tuple]):
     return false_positives
 
 
+@st.cache_data
 def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
     if type(colors) == str:
         colors = [colors] * len(boxes)
