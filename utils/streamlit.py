@@ -40,9 +40,9 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
     return image
 
 
-def add_table(column):
+def add_table(column, image):
     with column:
-        canvas_result = adjust_box(sst.im, key="new_table_canvas")
+        canvas_result = adjust_box(image, key="new_table_canvas")
         if canvas_result.json_data is not None and len(
             canvas_result.json_data["objects"]
         ):
@@ -92,3 +92,22 @@ def adjust_box(_page_image, box=None, **kwargs):
         _kwargs["key"] = kwargs["key"]
     canvas_result = st_canvas(**_kwargs)
     return canvas_result
+
+
+def update_edit_idx(img):
+    # if (
+    #     "element_to_edit" in st.session_state
+    #     and st.session_state.element_to_edit is not None
+    # ):
+    sst.phase = "요소 selectbox"
+    sst.edit_idx = sst.table_bboxes.index(sst.element_to_edit)
+
+    # st.session_state.df = None  # to export new dataframes of a new table
+
+    colors = ["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes)
+    colors[sst.edit_idx] = "red"
+    sst.page_preview = draw_boxes(
+        img,
+        sst.image_bboxes + sst.table_bboxes,
+        colors=colors,
+    )

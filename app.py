@@ -3,7 +3,7 @@ from parsers.tables import (
     extract_table_coordinates_per_page,
     load_table_coordinates_per_page,
 )
-from utils.streamlit import draw_boxes, add_table, update_phase
+from utils.streamlit import draw_boxes, add_table, update_phase, update_edit_idx
 
 import os
 import pdfplumber
@@ -54,6 +54,7 @@ if "pdf" not in sst:
         )
         sst.phase = None
         sst.page_idx = 0
+        sst.edit_idx = None
 
         if not sst.root_dir.exists():
             sst.root_dir.mkdir(parents=True)
@@ -80,7 +81,7 @@ elif "markdown" not in sst:
     )
 
     page = sst.pdf.pages[sst.page_idx]
-    sst.im = page.to_image()
+    im = page.to_image()
 
     sst.image_bboxes = load_image_bboxes_per_page(
         sst.page_idx + 1, sst.root_dir / "images"
@@ -89,12 +90,12 @@ elif "markdown" not in sst:
     sst.table_bboxes = load_table_coordinates_per_page(
         sst.page_idx + 1, sst.root_dir / "tables"
     )
-
-    sst.page_preview = draw_boxes(
-        sst.im.original,
-        sst.image_bboxes + sst.table_bboxes,
-        colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
-    )
+    if sst.phase not in ["요소 selectbox"]:
+        sst.page_preview = draw_boxes(
+            im.original,
+            sst.image_bboxes + sst.table_bboxes,
+            colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
+        )
 
     with preview_col:
         st.image(sst.page_preview, use_column_width=True)
@@ -106,4 +107,17 @@ elif "markdown" not in sst:
         )
     ) or sst.phase == "테이블 추가":
         with workspace_col:
-            add_table(workspace_col)
+            add_table(workspace_col, im)
+
+    if len(sst.table_bboxes + sst.image_bboxes) > 0:
+        element_to_edit = st.sidebar.selectbox(
+            "Select Table to Edit",
+            st.session_state.table_bboxes,
+            key="element_to_edit",
+            index=sst.edit_idx,
+            on_change=update_edit_idx,
+            args=(im.original,),
+        )
+
+        if element_to_edit:
+            st.warning(element_to_edit)
