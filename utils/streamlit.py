@@ -40,39 +40,37 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
     return image
 
 
-def add_table(column, image):
-    with column:
-        canvas_result = show_canvas(image, key="add_canvas")
-        if canvas_result.json_data is not None and len(
-            canvas_result.json_data["objects"]
-        ):
-            new_box = canvas_result.json_data["objects"][0]
-            new_box = (
-                new_box["left"],
-                new_box["top"],
-                new_box["left"] + new_box["width"],
-                new_box["top"] + new_box["height"],
-            )
-            if new_box not in sst.table_bboxes:
-                sst.table_bboxes.append(new_box)
-            st.sidebar.info(sst.table_bboxes[-1])
+def add_table(canvas_result):
+    # with column:
+    #     canvas_result = show_canvas(image, key="add_canvas")
+    if canvas_result.json_data is not None and len(canvas_result.json_data["objects"]):
+        new_box = canvas_result.json_data["objects"][0]
+        new_box = (
+            new_box["left"],
+            new_box["top"],
+            new_box["left"] + new_box["width"],
+            new_box["top"] + new_box["height"],
+        )
+        if new_box not in sst.table_bboxes:
+            sst.table_bboxes.append(new_box)
+        st.sidebar.info(sst.table_bboxes[-1])
+        # sst.phase = None
 
 
-def adjust_bbox(column, image):
-    with column:
-        canvas_result = show_canvas(image, key="adjust_canvas")
-        if canvas_result.json_data is not None and len(
-            canvas_result.json_data["objects"]
-        ):
-            new_box = canvas_result.json_data["objects"][0]
-            new_box = (
-                new_box["left"],
-                new_box["top"],
-                new_box["left"] + new_box["width"],
-                new_box["top"] + new_box["height"],
-            )
-            (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx] = new_box
-            st.sidebar.info(new_box)
+def adjust_bbox(canvas_result):
+    # with column:
+    #     canvas_result = show_canvas(image, key="adjust_canvas")
+    if canvas_result.json_data is not None and len(canvas_result.json_data["objects"]):
+        new_box = canvas_result.json_data["objects"][0]
+        new_box = (
+            new_box["left"],
+            new_box["top"],
+            new_box["left"] + new_box["width"],
+            new_box["top"] + new_box["height"],
+        )
+        (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx] = new_box
+        st.sidebar.info(new_box)
+        # sst.phase = None
 
 
 def show_canvas(_page_image, box=None, **kwargs):

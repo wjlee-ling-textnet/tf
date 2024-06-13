@@ -44,9 +44,9 @@ st.title("PDF-Markdown Converter")
 status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
 preview_col = preview_col.empty()
-if "add_canvas" not in sst and "adjust_canvas" not in sst:
-    # 무한 캔버스 로딩 문제 해결
-    workspace_col = workspace_col.empty()
+# if "add_canvas" not in sst and "adjust_canvas" not in sst:
+#     # 무한 캔버스 로딩 문제 해결
+#     workspace_col = workspace_col.empty()
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -113,13 +113,30 @@ elif "markdown" not in sst:
         ## TODO: draw_boxes에 편입
         st.image(sst.page_preview, use_column_width=True)
 
+    with workspace_col:
+        if sst.phase in ["테이블 추가", "테이블 범위 수정"]:
+            im_pil = im.original.convert("RGB")
+            canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
+            canvas_image.paste(im_pil)
+            _kwargs = {
+                "fill_color": "rgba(255, 165, 0, 0.3)",
+                "stroke_width": 2,
+                "stroke_color": "green",
+                "background_image": canvas_image,
+                "update_streamlit": True,
+                "height": im_pil.height,
+                "width": im_pil.width,
+                "drawing_mode": "rect",
+                "key": "canvas",
+            }
+            canvas_result = st_canvas(**_kwargs)
+
     if (
-        sst.table_bboxes
-        and st.sidebar.button(
-            "테이블 추가", on_click=update_phase, args=("테이블 추가",)
-        )
-    ) or sst.phase == "테이블 추가":
-        add_table(workspace_col, im)
+        st.sidebar.button("테이블 추가", on_click=update_phase, args=("테이블 추가",))
+        or sst.phase == "테이블 추가"
+    ):
+        # add_table(workspace_col, im)
+        add_table(canvas_result)
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
@@ -140,4 +157,19 @@ elif "markdown" not in sst:
                 )
                 or sst.phase == "테이블 범위 수정"
             ):
-                adjust_bbox(workspace_col, im)
+                # adjust_bbox(workspace_col, im)
+                adjust_bbox(canvas_result)
+
+            if (
+                st.sidebar.button(
+                    "요소 삭제", on_click=update_phase, args=("요소 삭제",)
+                )
+                or sst.phase == "요소 삭제"
+            ):
+                if element_to_edit in sst.image_bboxes:
+                    sst.image_bboxes.remove(element_to_edit)
+                else:
+                    sst.table_bboxes.remove(element_to_edit)
+
+                sst.edit_idx = None
+                sst.phase = None
