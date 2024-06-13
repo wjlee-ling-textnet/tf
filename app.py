@@ -15,17 +15,17 @@ from streamlit_quill import st_quill
 from typing import Union, List
 
 
-def _turn_page(user_input_page_idx):
+def _turn_page(user_input_page_idx=1):
     if "markdown" in sst:
         # 2단계 활성화
         del sst["markdown"]
 
-    st.session_state.page_idx = user_input_page_idx - 1
-    st.session_state.page_preview = None
-    st.session_state.table_boxes = []
-    st.session_state.image_boxes = []
-    st.session_state.plaintext_boxes = []
-    st.session_state.edit_idx = None
+    sst.page_idx = user_input_page_idx - 1
+    sst.page_preview = None
+    sst.table_boxes = []
+    sst.image_boxes = []
+    sst.plaintext_boxes = []
+    sst.edit_idx = None
 
 
 st.set_page_config(layout="wide")
@@ -57,6 +57,15 @@ if "pdf" not in sst:
                 ## 테이블 좌표 추출 & 저장
                 extract_table_coordinates_per_page(page, sst.root_dir / "tables")
 
+        st.rerun()
+
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
-if "markdown" not in sst:
-    pass
+elif "markdown" not in sst:
+    user_input_page_idx = st.sidebar.number_input(
+        "작업 페이지 번호",
+        min_value=1,
+        max_value=len(sst.pdf.pages),
+        value=1,
+    )
+    if user_input_page_idx:
+        _turn_page(user_input_page_idx)
