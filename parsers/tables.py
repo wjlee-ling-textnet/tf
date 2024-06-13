@@ -52,7 +52,7 @@ def extract_table_content(page, bbox, padding=7):
 
 def edit_table_contents(page):
     if sst.df is None:
-        bbox = sst.table_bboxes[sst.edit_idx]
+        bbox = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]
         padded_table = extract_table_content(page, bbox, padding=10)
         sst.df = pd.DataFrame(padded_table, index=None)  ## TODO: indexing /header 옵션
         sst.tabula_df = tabula.read_pdf(
@@ -63,6 +63,17 @@ def edit_table_contents(page):
             stream=True,
         )[0]
         st.rerun()
+
+
+def export_to_markdown(candidate_dfs):
+    bbox = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]
+    bbox_idx = sst.table_bboxes.index(bbox)
+
+    sst.table_bboxes[bbox_idx] = (
+        *bbox[:4],
+        candidate_dfs[sst.md_candidate_name].to_markdown(),
+    )
+    sst.phase = None
 
 
 def extract_tables_per_page_fitz(

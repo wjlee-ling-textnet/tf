@@ -2,6 +2,7 @@ from parsers.images import extract_images_per_page, load_image_bboxes_per_page
 from parsers.tables import (
     edit_table_contents,
     extract_table_coordinates_per_page,
+    export_to_markdown,
     load_table_coordinates_per_page,
 )
 from utils.streamlit import (
@@ -138,7 +139,6 @@ elif "markdown" not in sst:
 
         elif sst.phase == "테이블 내용 수정" and sst.df is not None:
             new_dfs, code = spreadsheet(sst.df, sst.tabula_df)
-            st.dataframe(new_dfs["df1"])
 
     if (
         st.sidebar.button("테이블 추가", on_click=update_phase, args=("테이블 추가",))
@@ -148,6 +148,7 @@ elif "markdown" not in sst:
         add_table(canvas_result)
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
+        print(sst.image_bboxes + sst.table_bboxes)
         element_to_edit = st.sidebar.selectbox(
             "요소 selectbox",
             sst.image_bboxes + sst.table_bboxes,
@@ -178,6 +179,19 @@ elif "markdown" not in sst:
                 or sst.phase == "테이블 내용 수정"
             ):
                 edit_table_contents(page)
+
+                if "md_df_name" not in sst:
+                    sst.md_df_idx = None
+
+                if st.sidebar.selectbox(
+                    label="마크다운 변환할 데이터프레임 선택",
+                    options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
+                    index=None,
+                    key="md_candidate_name",
+                    on_change=export_to_markdown,
+                    args=(new_dfs,),
+                ):
+                    st.rerun()
 
             if (
                 st.sidebar.button(
