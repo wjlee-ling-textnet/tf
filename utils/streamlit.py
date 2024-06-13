@@ -1,5 +1,8 @@
 import streamlit as st
 
+from typing import Union, List
+from PIL import Image, ImageDraw
+
 
 def make_button(label):
     return st.sidebar.button(label, disabled=(label not in st.session_state.next_steps))
@@ -17,3 +20,14 @@ def choose_delete_false_positives(boxes: list[tuple]):
             boxes.remove(pos)
 
     return false_positives
+
+
+def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
+    if type(colors) == str:
+        colors = [colors] * len(boxes)
+
+    if boxes is not None:
+        draw = ImageDraw.Draw(image)
+        for box, color in zip(boxes, colors):
+            draw.rectangle(box[:4], outline=color, width=2)
+    return image

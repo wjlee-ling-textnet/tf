@@ -3,6 +3,7 @@ from parsers.tables import (
     extract_table_coordinates_per_page,
     load_table_coordinates_per_page,
 )
+from utils.streamlit import draw_boxes
 
 import os
 import pdfplumber
@@ -77,11 +78,6 @@ elif "markdown" not in sst:
 
     page = sst.pdf.pages[sst.page_idx]
     im = page.to_image()
-    if sst.page_preview is None:
-        sst.page_preview = im.original
-
-    with preview_col:
-        st.image(sst.page_preview, use_column_width=True)
 
     sst.image_bboxes = load_image_bboxes_per_page(
         sst.page_idx + 1, sst.root_dir / "images"
@@ -90,3 +86,12 @@ elif "markdown" not in sst:
     sst.table_bboxes = load_table_coordinates_per_page(
         sst.page_idx + 1, sst.root_dir / "tables"
     )
+
+    sst.page_preview = draw_boxes(
+        im.original,
+        sst.image_bboxes + sst.table_bboxes,
+        colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
+    )
+
+    with preview_col:
+        st.image(sst.page_preview, use_column_width=True)
