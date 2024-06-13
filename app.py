@@ -1,5 +1,6 @@
 from parsers.images import extract_images_per_page, load_image_bboxes_per_page
 from parsers.tables import (
+    edit_table_contents,
     extract_table_coordinates_per_page,
     load_table_coordinates_per_page,
 )
@@ -37,6 +38,8 @@ def _turn_page():
     sst.plaintext_boxes = []
     sst.edit_idx = None
     sst.phase = None
+    sst.df = None
+    sst.tabula_df = None
 
 
 st.set_page_config(layout="wide")
@@ -50,14 +53,14 @@ preview_col = preview_col.empty()
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
-    uploaded_file = st.file_uploader("Choose a PDF file to work on", type="pdf")
-    if uploaded_file:
-        sst.pdf = pdfplumber.open(uploaded_file)
+    sst.uploaded_file = st.file_uploader("Choose a PDF file to work on", type="pdf")
+    if sst.uploaded_file:
+        sst.pdf = pdfplumber.open(sst.uploaded_file)
         sst.root_dir = Path(
             os.path.join(
                 os.path.expanduser("~"),
                 "Downloads",
-                uploaded_file.name.replace(" ", "_").rstrip(".pdf"),
+                sst.uploaded_file.name.replace(" ", "_").rstrip(".pdf"),
             )
         )
         sst.phase = None
@@ -65,6 +68,8 @@ if "pdf" not in sst:
         sst.edit_idx = None
         sst.image_bboxes = None
         sst.table_bboxes = None
+        sst.df = None
+        sst.tabula_df = None
 
         if not sst.root_dir.exists():
             sst.root_dir.mkdir(parents=True)
@@ -131,6 +136,10 @@ elif "markdown" not in sst:
             }
             canvas_result = st_canvas(**_kwargs)
 
+        elif sst.phase == "테이블 내용 수정" and sst.df is not None:
+            new_dfs, code = spreadsheet(sst.df, sst.tabula_df)
+            st.dataframe(new_dfs["df1"])
+
     if (
         st.sidebar.button("테이블 추가", on_click=update_phase, args=("테이블 추가",))
         or sst.phase == "테이블 추가"
@@ -140,7 +149,7 @@ elif "markdown" not in sst:
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
-            "범위 수정 및 삭제할 요소 선택",
+            "요소 selectbox",
             sst.image_bboxes + sst.table_bboxes,
             key="element_to_edit",
             index=sst.edit_idx,
@@ -159,6 +168,16 @@ elif "markdown" not in sst:
             ):
                 # adjust_bbox(workspace_col, im)
                 adjust_bbox(canvas_result)
+
+            if (
+                st.sidebar.button(
+                    "테이블 내용 수정",
+                    on_click=update_phase,
+                    args=("테이블 내용 수정",),
+                )
+                or sst.phase == "테이블 내용 수정"
+            ):
+                edit_table_contents(page)
 
             if (
                 st.sidebar.button(
