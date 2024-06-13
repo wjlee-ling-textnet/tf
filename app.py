@@ -110,6 +110,7 @@ elif "markdown" not in sst:
         )
 
     with preview_col:
+        ## TODO: draw_boxes에 편입
         st.image(sst.page_preview, use_column_width=True)
 
     if (
@@ -118,8 +119,7 @@ elif "markdown" not in sst:
             "테이블 추가", on_click=update_phase, args=("테이블 추가",)
         )
     ) or sst.phase == "테이블 추가":
-        with workspace_col:
-            add_table(workspace_col, im)
+        add_table(workspace_col, im)
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
@@ -140,5 +140,4 @@ elif "markdown" not in sst:
                 )
                 or sst.phase == "테이블 범위 수정"
             ):
-                with workspace_col:
-                    adjust_bbox(workspace_col, im)
+                adjust_bbox(workspace_col, im)
