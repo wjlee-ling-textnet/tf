@@ -148,7 +148,6 @@ elif "markdown" not in sst:
         add_table(canvas_result)
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
-        print(sst.image_bboxes + sst.table_bboxes)
         element_to_edit = st.sidebar.selectbox(
             "요소 selectbox",
             sst.image_bboxes + sst.table_bboxes,
