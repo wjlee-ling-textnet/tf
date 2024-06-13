@@ -7,7 +7,7 @@ from streamlit_drawable_canvas import st_canvas
 
 
 def make_button(label):
-    return st.sidebar.button(label, disabled=(label not in st.session_state.next_steps))
+    return st.sidebar.button(label, disabled=(label not in sst.next_steps))
 
 
 def update_phase(new_phase):
@@ -42,7 +42,7 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
 
 def add_table(column, image):
     with column:
-        canvas_result = adjust_box(image, key="new_table_canvas")
+        canvas_result = show_canvas(image, key="new_table_canvas")
         if canvas_result.json_data is not None and len(
             canvas_result.json_data["objects"]
         ):
@@ -53,12 +53,12 @@ def add_table(column, image):
                 new_box["left"] + new_box["width"],
                 new_box["top"] + new_box["height"],
             )
-            if new_box not in st.session_state.table_bboxes:
-                st.session_state.table_bboxes.append(new_box)
-            st.sidebar.info(st.session_state.table_bboxes[-1])
+            if new_box not in sst.table_bboxes:
+                sst.table_bboxes.append(new_box)
+            st.sidebar.info(sst.table_bboxes[-1])
 
 
-def adjust_box(_page_image, box=None, **kwargs):
+def show_canvas(_page_image, box=None, **kwargs):
     im_pil = _page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
@@ -96,12 +96,12 @@ def adjust_box(_page_image, box=None, **kwargs):
 
 def update_edit_idx(img):
     # if (
-    #     "element_to_edit" in st.session_state
-    #     and st.session_state.element_to_edit is not None
+    #     "element_to_edit" in sst
+    #     and sst.element_to_edit is not None
     # ):
     sst.phase = "요소 selectbox"
     sst.edit_idx = (sst.image_bboxes + sst.table_bboxes).index(sst.element_to_edit)
-    # st.session_state.df = None  # to export new dataframes of a new table
+    # sst.df = None  # to export new dataframes of a new table
 
     colors = ["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes)
     colors[sst.edit_idx] = "red"
