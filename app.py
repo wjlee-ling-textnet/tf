@@ -32,8 +32,8 @@ def _turn_page():
 
     sst.page_idx = sst.user_input_page_idx - 1
     sst.page_preview = None
-    sst.table_boxes = []
-    sst.image_boxes = []
+    sst.table_bboxes = None
+    sst.image_bboxes = None
     sst.plaintext_boxes = []
     sst.edit_idx = None
     sst.phase = None
@@ -63,6 +63,8 @@ if "pdf" not in sst:
         sst.phase = None
         sst.page_idx = 0
         sst.edit_idx = None
+        sst.image_bboxes = None
+        sst.table_bboxes = None
 
         if not sst.root_dir.exists():
             sst.root_dir.mkdir(parents=True)
@@ -91,7 +93,7 @@ elif "markdown" not in sst:
     page = sst.pdf.pages[sst.page_idx]
     im = page.to_image()
 
-    if "image_bboxes" not in sst:
+    if sst.image_bboxes is None and sst.table_bboxes is None:
         sst.image_bboxes = load_image_bboxes_per_page(
             sst.page_idx + 1, sst.root_dir / "images"
         )
