@@ -42,7 +42,7 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
 
 def add_table(column, image):
     with column:
-        canvas_result = show_canvas(image, key="new_table_canvas")
+        canvas_result = show_canvas(image, key="add_canvas")
         if canvas_result.json_data is not None and len(
             canvas_result.json_data["objects"]
         ):
@@ -56,6 +56,23 @@ def add_table(column, image):
             if new_box not in sst.table_bboxes:
                 sst.table_bboxes.append(new_box)
             st.sidebar.info(sst.table_bboxes[-1])
+
+
+def adjust_bbox(column, image):
+    with column:
+        canvas_result = show_canvas(image, key="adjust_canvas")
+        if canvas_result.json_data is not None and len(
+            canvas_result.json_data["objects"]
+        ):
+            new_box = canvas_result.json_data["objects"][0]
+            new_box = (
+                new_box["left"],
+                new_box["top"],
+                new_box["left"] + new_box["width"],
+                new_box["top"] + new_box["height"],
+            )
+            (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx] = new_box
+            st.sidebar.info(new_box)
 
 
 def show_canvas(_page_image, box=None, **kwargs):

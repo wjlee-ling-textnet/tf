@@ -3,7 +3,13 @@ from parsers.tables import (
     extract_table_coordinates_per_page,
     load_table_coordinates_per_page,
 )
-from utils.streamlit import draw_boxes, add_table, update_phase, update_edit_idx
+from utils.streamlit import (
+    draw_boxes,
+    add_table,
+    update_phase,
+    update_edit_idx,
+    adjust_bbox,
+)
 
 import os
 import pdfplumber
@@ -38,7 +44,9 @@ st.title("PDF-Markdown Converter")
 status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
 preview_col = preview_col.empty()
-# workspace_col = workspace_col.empty()
+if "add_canvas" not in sst and "adjust_canvas" not in sst:
+    # 무한 캔버스 로딩 문제 해결
+    workspace_col = workspace_col.empty()
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -83,14 +91,16 @@ elif "markdown" not in sst:
     page = sst.pdf.pages[sst.page_idx]
     im = page.to_image()
 
-    sst.image_bboxes = load_image_bboxes_per_page(
-        sst.page_idx + 1, sst.root_dir / "images"
-    )
+    if "image_bboxes" not in sst:
+        sst.image_bboxes = load_image_bboxes_per_page(
+            sst.page_idx + 1, sst.root_dir / "images"
+        )
 
-    sst.table_bboxes = load_table_coordinates_per_page(
-        sst.page_idx + 1, sst.root_dir / "tables"
-    )
-    if sst.phase not in ["요소 selectbox"]:
+        sst.table_bboxes = load_table_coordinates_per_page(
+            sst.page_idx + 1, sst.root_dir / "tables"
+        )
+
+    if "page_preview" not in sst or sst.page_preview is None:
         sst.page_preview = draw_boxes(
             im.original,
             sst.image_bboxes + sst.table_bboxes,
@@ -120,4 +130,13 @@ elif "markdown" not in sst:
         )
 
         if element_to_edit:
-            st.warning(element_to_edit)
+            if (
+                st.sidebar.button(
+                    "테이블 범위 수정",
+                    on_click=update_phase,
+                    args=("테이블 범위 수정",),
+                )
+                or sst.phase == "테이블 범위 수정"
+            ):
+                with workspace_col:
+                    adjust_bbox(workspace_col, im)
