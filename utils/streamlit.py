@@ -100,8 +100,7 @@ def update_edit_idx(img):
     #     and st.session_state.element_to_edit is not None
     # ):
     sst.phase = "요소 selectbox"
-    sst.edit_idx = sst.table_bboxes.index(sst.element_to_edit)
-
+    sst.edit_idx = (sst.image_bboxes + sst.table_bboxes).index(sst.element_to_edit)
     # st.session_state.df = None  # to export new dataframes of a new table
 
     colors = ["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes)

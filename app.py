@@ -109,10 +109,10 @@ elif "markdown" not in sst:
         with workspace_col:
             add_table(workspace_col, im)
 
-    if len(sst.table_bboxes + sst.image_bboxes) > 0:
+    if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
-            "Select Table to Edit",
-            st.session_state.table_bboxes,
+            "범위 수정 및 삭제할 요소 선택",
+            sst.image_bboxes + sst.table_bboxes,
             key="element_to_edit",
             index=sst.edit_idx,
             on_change=update_edit_idx,
