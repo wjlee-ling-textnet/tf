@@ -32,6 +32,8 @@ st.set_page_config(layout="wide")
 st.title("PDF-Markdown Converter")
 status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
+preview_col = preview_col.empty()
+workspace_col = workspace_col.empty()
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -69,3 +71,11 @@ elif "markdown" not in sst:
     )
     if user_input_page_idx:
         _turn_page(user_input_page_idx)
+
+    page = sst.pdf.pages[sst.page_idx]
+    im = page.to_image()
+    if sst.page_preview is None:
+        sst.page_preview = im.original
+
+    with preview_col:
+        st.image(sst.page_preview, use_column_width=True)
