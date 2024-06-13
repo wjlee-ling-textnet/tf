@@ -53,8 +53,9 @@ def add_table(canvas_result):
         )
         if new_box not in sst.table_bboxes:
             sst.table_bboxes.append(new_box)
-        st.sidebar.info(sst.table_bboxes[-1])
-        # sst.phase = None
+        # st.sidebar.info(sst.table_bboxes[-1])
+        return new_box
+    return None
 
 
 def adjust_bbox(canvas_result):
@@ -69,8 +70,9 @@ def adjust_bbox(canvas_result):
             new_box["top"] + new_box["height"],
         )
         (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx] = new_box
-        st.sidebar.info(new_box)
-        # sst.phase = None
+        # st.sidebar.info(new_box)
+        return new_box
+    return None
 
 
 def show_canvas(_page_image, box=None, **kwargs):

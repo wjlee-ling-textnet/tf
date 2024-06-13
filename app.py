@@ -148,7 +148,8 @@ elif "markdown" not in sst:
         or sst.phase == "테이블 추가"
     ):
         # add_table(workspace_col, im)
-        add_table(canvas_result)
+        if new_box := add_table(canvas_result):
+            status_placeholder.write(new_box)
 
     if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
@@ -170,7 +171,8 @@ elif "markdown" not in sst:
                 or sst.phase == "테이블 범위 수정"
             ):
                 # adjust_bbox(workspace_col, im)
-                adjust_bbox(canvas_result)
+                if new_box := adjust_bbox(canvas_result):
+                    status_placeholder.write(new_box)
 
             if (
                 st.sidebar.button(
