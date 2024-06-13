@@ -11,6 +11,7 @@ from utils.streamlit import (
     update_phase,
     update_edit_idx,
     adjust_bbox,
+    check_process,
 )
 
 import os
@@ -88,8 +89,13 @@ if "pdf" not in sst:
 
         st.rerun()
 
+### 3단계: 페이지 마크다운 생성
+elif sst.phase == "텍스트 추출":
+    st.warning("🩷" * 10)
+    pass
+
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
-elif "markdown" not in sst:
+else:
     st.sidebar.number_input(
         "작업 페이지 번호",
         min_value=1,
@@ -151,7 +157,14 @@ elif "markdown" not in sst:
         if new_box := add_table(canvas_result):
             status_placeholder.write(new_box)
 
-    if len(sst.image_bboxes + sst.table_bboxes) > 0:
+    if check_process(sst.image_bboxes + sst.table_bboxes):
+        if st.sidebar.button(
+            "텍스트 추출", on_click=update_phase, args=("텍스트 추출",)
+        ):
+            st.rerun()
+
+    else:
+        # if len(sst.image_bboxes + sst.table_bboxes) > 0:
         element_to_edit = st.sidebar.selectbox(
             "요소 selectbox",
             sst.image_bboxes + sst.table_bboxes,
@@ -195,7 +208,8 @@ elif "markdown" not in sst:
                     on_change=export_to_markdown,
                     args=(new_dfs,),
                 ):
-                    st.rerun()
+                    pass
+                    # st.rerun()
 
             if (
                 st.sidebar.button(
@@ -209,4 +223,4 @@ elif "markdown" not in sst:
                     sst.table_bboxes.remove(element_to_edit)
 
                 sst.edit_idx = None
-                sst.phase = None
+                st.rerun()
