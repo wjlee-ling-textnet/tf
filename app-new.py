@@ -57,11 +57,11 @@ def draw_boxes(image, boxes: List, colors: Union[str, List[str]] = "blue"):
     return image
 
 
-def adjust_box(_page_image, box=None):
+def adjust_box(_page_image, box=None, **kwargs):
     im_pil = _page_image.original.convert("RGB")
     canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
     canvas_image.paste(im_pil)
-    kwargs = {
+    _kwargs = {
         "fill_color": "rgba(255, 165, 0, 0.3)",
         "stroke_width": 2,
         "stroke_color": "green",
@@ -74,7 +74,7 @@ def adjust_box(_page_image, box=None):
     }
 
     if box is not None:
-        kwargs["initial_drawing"] = {
+        _kwargs["initial_drawing"] = {
             "shapes": [
                 {
                     "type": "rect",
@@ -87,7 +87,9 @@ def adjust_box(_page_image, box=None):
                 }
             ]
         }
-    canvas_result = st_canvas(**kwargs)
+    if "key" in kwargs:
+        _kwargs["key"] = kwargs["key"]
+    canvas_result = st_canvas(**_kwargs)
     return canvas_result
 
 
@@ -217,23 +219,23 @@ if "pdf" in st.session_state:
                     st.session_state.table_boxes,
                     colors=colors,
                 )
-                st.session_state.next_steps = ["모든 테이블 인식", "테이블 csv 추출"]
+                st.session_state.next_steps = [
+                    "모든 테이블 인식",
+                    "테이블 csv 추출",
+                    "테이블 추가",
+                ]
                 st.rerun()
 
             else:
                 if st.sidebar.button(
-                    "테이블 범위 설정",
-                    on_click=lambda: st.session_state.next_steps.append(
-                        "테이블 범위 설정"
-                    ),
+                    "테이블 추가",
+                    on_click=lambda: st.session_state.next_steps.append("테이블 추가"),
                 ):
                     pass
 
-        elif "테이블 범위 설정" in st.session_state.next_steps:
+        if "테이블 추가" in st.session_state.next_steps:
             with col2:
-                canvas_result = adjust_box(
-                    im,
-                )
+                canvas_result = adjust_box(im)
             if canvas_result.json_data is not None and len(
                 canvas_result.json_data["objects"]
             ):
@@ -252,6 +254,7 @@ if "pdf" in st.session_state:
                 )
                 st.session_state.next_steps = ["수정 완료"]
                 st.rerun()
+
     else:
         # else:
         false_positives = choose_delete_false_positives(st.session_state.table_boxes)
@@ -260,7 +263,28 @@ if "pdf" in st.session_state:
                 "모든 테이블 인식",
                 "이미지 추출",
                 "텍스트 추출",
+                "테이블 추가",
             ]
+
+        if make_button("테이블 추가") or "new_table_canvas" in st.session_state:
+            if "테이블 추가" not in st.session_state.next_steps:
+                st.session_state.next_steps.append("테이블 추가")
+            with col2:
+                canvas_result = adjust_box(im, key="new_table_canvas")
+            if canvas_result.json_data is not None and len(
+                canvas_result.json_data["objects"]
+            ):
+                new_box = canvas_result.json_data["objects"][0]
+                new_box = (
+                    new_box["left"],
+                    new_box["top"],
+                    new_box["left"] + new_box["width"],
+                    new_box["top"] + new_box["height"],
+                )
+                if new_box not in st.session_state.table_boxes:
+                    st.session_state.table_boxes.append(new_box)
+                st.sidebar.info(st.session_state.table_boxes[-1])
+                st.session_state.next_steps = ["테이블 추가", "테이블 추출"]
 
         table_to_edit = st.sidebar.selectbox(
             "Select Table to Edit",
@@ -312,10 +336,13 @@ if "pdf" in st.session_state:
                 st.rerun()
 
             if make_button("테이블 추출") or st.session_state.df is not None:
-                # st.session_state.next_steps = [
-                #     "텍스트 추출",
-                #     "테이블 마크다운 변환",
-                # ]
+                st.session_state.next_steps = [
+                    "텍스트 추출",
+                    "마크다운 변환",
+                    "테이블 추출",
+                ]  # 있어야 복수 테이블이 있는 페이지에서 sst.table.to_edit_idx 관련 안꼬임
+                if "new_table_canvas" in st.session_state:
+                    del st.session_state["new_table_canvas"]
 
                 box = st.session_state.table_boxes[st.session_state.table_to_edit_idx]
                 if st.session_state.df is None:
