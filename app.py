@@ -15,10 +15,23 @@ from streamlit_quill import st_quill
 from typing import Union, List
 
 
+def _turn_page(user_input_page_idx):
+    if "markdown" in sst:
+        # 2단계 활성화
+        del sst["markdown"]
+
+    st.session_state.page_idx = user_input_page_idx - 1
+    st.session_state.page_preview = None
+    st.session_state.table_boxes = []
+    st.session_state.image_boxes = []
+    st.session_state.plaintext_boxes = []
+    st.session_state.edit_idx = None
+
+
 st.set_page_config(layout="wide")
 st.title("PDF-Markdown Converter")
 status_placeholder = st.empty()
-col1, col2 = st.columns([0.4, 0.6])
+preview_col, workspace_col = st.columns([0.5, 0.5])
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -32,6 +45,7 @@ if "pdf" not in sst:
                 uploaded_file.name.replace(" ", "_").rstrip(".pdf"),
             )
         )
+
         if not sst.root_dir.exists():
             sst.root_dir.mkdir(parents=True)
 
@@ -42,3 +56,7 @@ if "pdf" not in sst:
 
                 ## 테이블 좌표 추출 & 저장
                 extract_table_coordinates_per_page(page, sst.root_dir / "tables")
+
+## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
+if "markdown" not in sst:
+    pass
