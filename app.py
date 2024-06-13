@@ -1,4 +1,4 @@
-from parsers.images import extract_images_per_page
+from parsers.images import extract_images_per_page, load_image_bboxes_per_page
 from parsers.tables import extract_table_coordinates_per_page
 
 import os
@@ -79,3 +79,7 @@ elif "markdown" not in sst:
 
     with preview_col:
         st.image(sst.page_preview, use_column_width=True)
+
+    sst.image_bboxes = load_image_bboxes_per_page(
+        sst.page_idx + 1, sst.root_dir / "images"
+    )
