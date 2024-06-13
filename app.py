@@ -3,7 +3,7 @@ from parsers.tables import (
     extract_table_coordinates_per_page,
     load_table_coordinates_per_page,
 )
-from utils.streamlit import draw_boxes
+from utils.streamlit import draw_boxes, add_table, update_phase
 
 import os
 import pdfplumber
@@ -19,17 +19,18 @@ from streamlit_quill import st_quill
 from typing import Union, List
 
 
-def _turn_page(user_input_page_idx=1):
+def _turn_page():
     if "markdown" in sst:
         # 2단계 활성화
         del sst["markdown"]
 
-    sst.page_idx = user_input_page_idx - 1
+    sst.page_idx = sst.user_input_page_idx - 1
     sst.page_preview = None
     sst.table_boxes = []
     sst.image_boxes = []
     sst.plaintext_boxes = []
     sst.edit_idx = None
+    sst.phase = None
 
 
 st.set_page_config(layout="wide")
@@ -37,7 +38,7 @@ st.title("PDF-Markdown Converter")
 status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
 preview_col = preview_col.empty()
-workspace_col = workspace_col.empty()
+# workspace_col = workspace_col.empty()
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -51,6 +52,8 @@ if "pdf" not in sst:
                 uploaded_file.name.replace(" ", "_").rstrip(".pdf"),
             )
         )
+        sst.phase = None
+        sst.page_idx = 0
 
         if not sst.root_dir.exists():
             sst.root_dir.mkdir(parents=True)
@@ -67,17 +70,17 @@ if "pdf" not in sst:
 
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
 elif "markdown" not in sst:
-    user_input_page_idx = st.sidebar.number_input(
+    st.sidebar.number_input(
         "작업 페이지 번호",
         min_value=1,
         max_value=len(sst.pdf.pages),
         value=1,
+        on_change=_turn_page,
+        key="user_input_page_idx",
     )
-    if user_input_page_idx:
-        _turn_page(user_input_page_idx)
 
     page = sst.pdf.pages[sst.page_idx]
-    im = page.to_image()
+    sst.im = page.to_image()
 
     sst.image_bboxes = load_image_bboxes_per_page(
         sst.page_idx + 1, sst.root_dir / "images"
@@ -88,10 +91,19 @@ elif "markdown" not in sst:
     )
 
     sst.page_preview = draw_boxes(
-        im.original,
+        sst.im.original,
         sst.image_bboxes + sst.table_bboxes,
         colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
     )
 
     with preview_col:
         st.image(sst.page_preview, use_column_width=True)
+
+    if (
+        sst.table_bboxes
+        and st.sidebar.button(
+            "테이블 추가", on_click=update_phase, args=("테이블 추가",)
+        )
+    ) or sst.phase == "테이블 추가":
+        with workspace_col:
+            add_table(workspace_col)
