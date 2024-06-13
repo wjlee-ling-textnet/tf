@@ -1,4 +1,5 @@
 from parsers.images import extract_images_per_page
+from parsers.tables import extract_table_coordinates_per_page
 
 import os
 import pdfplumber
@@ -38,3 +39,6 @@ if "pdf" not in sst:
             for page in sst.pdf.pages:
                 ## 이미지 추출 & 저장
                 extract_images_per_page(page, output_dir=sst.root_dir / "images")
+
+                ## 테이블 좌표 추출 & 저장
+                extract_table_coordinates_per_page(page, sst.root_dir / "tables")

@@ -1,8 +1,25 @@
+import pickle
+
 from pathlib import Path
 from typing import Union
 
 
-def extract_tables_per_page(
+def extract_table_coordinates_per_page(page, output_dir) -> list:
+    # coordinates = []
+    detected_tables = page.find_tables()
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+
+    if detected_tables:
+        save_path = output_dir / f"page_{page.page_number}.pkl"
+        with save_path.open("wb") as f:
+            for table in detected_tables:
+                pickle.dump(table.bbox, f)
+                # coordinates.append(table.bbox)
+    # return coordinates
+
+
+def extract_tables_per_page_fitz(
     page,
     *,
     output_format: str = "csv",
