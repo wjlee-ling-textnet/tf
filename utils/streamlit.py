@@ -53,9 +53,9 @@ def add_table(column):
                 new_box["left"] + new_box["width"],
                 new_box["top"] + new_box["height"],
             )
-            if new_box not in st.session_state.table_boxes:
-                st.session_state.table_boxes.append(new_box)
-            st.sidebar.info(st.session_state.table_boxes[-1])
+            if new_box not in st.session_state.table_bboxes:
+                st.session_state.table_bboxes.append(new_box)
+            st.sidebar.info(st.session_state.table_bboxes[-1])
 
 
 def adjust_box(_page_image, box=None, **kwargs):
