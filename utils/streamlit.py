@@ -127,3 +127,15 @@ def update_edit_idx(img):
         sst.image_bboxes + sst.table_bboxes,
         colors=colors,
     )
+
+
+def check_process(boxes: list[tuple]):
+    """
+    Before constructing the final markdown of a page, check if each bounding box consists of more than 4 elements (coordinates), meaning that it has been parsed and processed.
+    """
+    if boxes:
+        for box in boxes:
+            if len(box) <= 4:
+                st.warning("검수 및 마크다운 전환이 되지 않은 요소가 있습니다.")
+                return False
+    return True
