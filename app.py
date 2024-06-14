@@ -178,26 +178,6 @@ if "markdown" in sst and sst.markdown:
 
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
 else:
-    # if sst.image_bboxes is None and sst.table_bboxes is None:
-    #     sst.image_bboxes = load_image_bboxes_per_page(
-    #         sst.page_idx + 1, sst.root_dir / "images"
-    #     )
-
-    #     sst.table_bboxes = load_table_coordinates_per_page(
-    #         sst.page_idx + 1, sst.root_dir / "tables"
-    #     )
-
-    # if "page_preview" not in sst or sst.page_preview is None:
-    #     sst.page_preview = draw_boxes(
-    #         im.original,
-    #         sst.image_bboxes + sst.table_bboxes,
-    #         colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
-    #     )
-
-    # with preview_col:
-    #     ## TODO: draw_boxes에 편입
-    #     st.image(sst.page_preview, use_column_width=True)
-
     with workspace_col:
         if sst.phase in ["테이블 추가", "테이블 범위 수정"]:
             im_pil = im.original.convert("RGB")
@@ -262,8 +242,10 @@ else:
                 or sst.phase == "테이블 범위 수정"
             ):
                 # adjust_bbox(workspace_col, im)
-                if new_box := adjust_bbox(canvas_result):
+                if new_box := adjust_bbox(canvas_result, page_img=im):
                     status_placeholder.write(new_box)
+                    sst.phase = "요소 selectbox"
+                    st.rerun()
 
             if (
                 st.sidebar.button(

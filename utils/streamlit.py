@@ -59,9 +59,8 @@ def add_table(canvas_result):
     return None
 
 
-def adjust_bbox(canvas_result):
-    # with column:
-    #     canvas_result = show_canvas(image, key="adjust_canvas")
+def adjust_bbox(canvas_result, page_img):
+
     if canvas_result.json_data is not None and len(canvas_result.json_data["objects"]):
         new_box = canvas_result.json_data["objects"][0]
         new_box = (
@@ -70,8 +69,20 @@ def adjust_bbox(canvas_result):
             new_box["left"] + new_box["width"],
             new_box["top"] + new_box["height"],
         )
-        (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx] = new_box
-        # st.sidebar.info(new_box)
+        old_bbox_name = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]
+        if old_bbox_name in sst.table_bboxes:
+            idx = sst.table_bboxes.index(old_bbox_name)
+            sst.table_bboxes[idx] = new_box
+        else:
+            idx = sst.image_bboxes.index(old_bbox_name)
+            sst.image_bboxes[idx] = new_box
+
+        sst.page_preview = draw_boxes(
+            page_img.original,
+            sst.image_bboxes + sst.table_bboxes,
+            colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
+        )
+
         return new_box
     return None
 
