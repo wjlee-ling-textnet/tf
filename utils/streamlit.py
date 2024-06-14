@@ -1,6 +1,7 @@
 import streamlit as st
 
 from typing import Union, List
+from pathlib import Path
 from PIL import Image, ImageDraw
 from streamlit import session_state as sst
 from streamlit_drawable_canvas import st_canvas
@@ -138,3 +139,39 @@ def check_process(boxes: list[tuple]):
                 st.warning("검수 및 마크다운 전환이 되지 않은 요소가 있습니다.")
                 return False
     return True
+
+
+def sort_elements_by_bbox(elements: list):
+    return sorted(elements, key=lambda ele: (ele[1], ele[0]))
+
+
+def _create_hyperlink(element, save_root_dir: Path):
+    table_extensions = (".csv", ".tsv", ".xlsx")
+    image_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff")
+    if element.endswith(table_extensions) or element.endswith(image_extensions):
+        element = element.lstrip(save_root_dir.__str__()).lstrip("/")
+        # element = (
+        #     "/".join(element.split("/")[1:])
+        #     if element.startswith("sample/")
+        #     else element
+        # )
+        return f"[{element}]({element})"
+    else:
+        return element
+
+
+def reconstruct_page_from_elements(elements: list, save_root_dir: Path):
+    "Given elements, sorted by their bounding box, reconstruct a page in markdown format by removing the bounding box information."
+    page_content = ""
+    for element in elements:
+        if type(element[4]) == str:
+            page_content += element[4]
+        else:
+            page_content += _create_hyperlink(
+                str(element[4]), save_root_dir=save_root_dir
+            )
+
+        if not page_content.endswith("\n"):
+            page_content += "\n"
+
+    return page_content
