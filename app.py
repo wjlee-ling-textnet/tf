@@ -90,9 +90,8 @@ if "pdf" not in sst:
         st.rerun()
 
 ### 3단계: 페이지 마크다운 생성
-elif sst.phase == "텍스트 추출":
-    st.warning("🩷" * 10)
-    pass
+elif "markdown" in sst and sst.markdown:
+    st.warning(sst.markdown)
 
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
 else:
@@ -160,8 +159,13 @@ else:
     if check_process(sst.image_bboxes + sst.table_bboxes):
         status_placeholder.write(sst.table_bboxes)
         if st.sidebar.button(
-            "텍스트 추출", on_click=update_phase, args=("텍스트 추출",)
+            "테이블/이미지 검수 종료",
+            on_click=update_phase,
+            args=("테이블/이미지 검수 종료",),
         ):
+            sst.markdown = "\n".join(
+                [bbox[4] for bbox in sst.image_bboxes + sst.table_bboxes]
+            )
             st.rerun()
 
     else:
