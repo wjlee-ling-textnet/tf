@@ -196,7 +196,7 @@ else:
             }
             canvas_result = st_canvas(**_kwargs)
 
-        elif sst.phase == "테이블 내용 수정":
+        elif sst.phase == "테이블 내용 검수":
             new_dfs, code = spreadsheet(sst.df, sst.tabula_df)
 
     if (
@@ -252,11 +252,11 @@ else:
 
             if (
                 st.sidebar.button(
-                    "테이블 내용 수정",
+                    "테이블 내용 검수",
                     on_click=create_dataframes,
                     args=(page,),
                 )
-                or sst.phase == "테이블 내용 수정"
+                or sst.phase == "테이블 내용 검수"
             ):
 
                 if "md_df_name" not in sst:

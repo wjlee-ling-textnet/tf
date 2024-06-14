@@ -51,7 +51,7 @@ def extract_table_content(page, bbox, padding=7):
 
 
 def create_dataframes(page):
-    sst.phase = "테이블 내용 수정"
+    sst.phase = "테이블 내용 검수"
 
     bbox = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]
     padded_table = extract_table_content(page, bbox, padding=10)
