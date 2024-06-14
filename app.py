@@ -141,6 +141,7 @@ if "markdown" in sst and sst.markdown:
     ):
         sst.markdown = None
         sst.phase = "요소 selectbox"
+        st.rerun()
 
     plaintext_bboxes = page.extract_words(
         x_tolerance=2, extra_attrs=["fontname", "size"]
