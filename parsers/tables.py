@@ -50,7 +50,7 @@ def extract_table_content(page, bbox, padding=7):
     return new_table
 
 
-def edit_table_contents(page):
+def create_dataframes(page):
     sst.phase = "테이블 내용 수정"
 
     bbox = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]

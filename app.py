@@ -1,6 +1,6 @@
 from parsers.images import extract_images_per_page, load_image_bboxes_per_page
 from parsers.tables import (
-    edit_table_contents,
+    create_dataframes,
     extract_table_coordinates_per_page,
     export_to_markdown,
     load_table_coordinates_per_page,
@@ -191,7 +191,7 @@ else:
             if (
                 st.sidebar.button(
                     "테이블 내용 수정",
-                    on_click=edit_table_contents,
+                    on_click=create_dataframes,
                     args=(page,),
                 )
                 or sst.phase == "테이블 내용 수정"
