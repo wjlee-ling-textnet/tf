@@ -92,6 +92,14 @@ if "pdf" not in sst:
 ### 3단계: 페이지 마크다운 생성
 elif "markdown" in sst and sst.markdown:
     st.warning(sst.markdown)
+    if (
+        st.sidebar.button(
+            "테이블/이미지 수정", on_click=update_phase, args=("테이블/이미지 수정",)
+        )
+        or sst.phase == "테이블/이미지 수정"
+    ):
+        sst.markdown = None
+        sst.phase = "요소 selectbox"
 
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
 else:
@@ -163,7 +171,8 @@ else:
             on_click=update_phase,
             args=("테이블/이미지 검수 종료",),
         ):
-            sst.markdown = "\n".join(
+            sst.markdown = " "
+            sst.markdown += "\n".join(
                 [bbox[4] for bbox in sst.image_bboxes + sst.table_bboxes]
             )
             st.rerun()
