@@ -67,13 +67,13 @@ def create_dataframes(page):
 
 
 def export_to_markdown(candidate_dfs):
+    sst.phase = "테이블 내용 수정"
     bbox = (sst.image_bboxes + sst.table_bboxes)[sst.edit_idx]
     bbox_idx = sst.table_bboxes.index(bbox)
     sst.table_bboxes[bbox_idx] = (
         *bbox[:4],
         candidate_dfs[sst.md_candidate_name].to_markdown(),
     )
-    # sst.phase = "마크다운 변환"
 
 
 def extract_tables_per_page_fitz(

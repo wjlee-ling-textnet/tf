@@ -259,7 +259,7 @@ else:
                 if "md_df_name" not in sst:
                     sst.md_df_idx = None
 
-                if st.sidebar.selectbox(
+                if chosen_df := st.sidebar.selectbox(
                     label="마크다운 변환할 데이터프레임 선택",
                     options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
                     index=None,
@@ -267,8 +267,7 @@ else:
                     on_change=export_to_markdown,
                     args=(new_dfs,),
                 ):
-                    pass
-                    # st.rerun()
+                    sst.phase = "요소 selectbox"
 
             if (
                 st.sidebar.button(
@@ -276,10 +275,12 @@ else:
                 )
                 or sst.phase == "요소 삭제"
             ):
+                status_placeholder.write(f"🤖 요소 삭제: {element_to_edit}")
                 if element_to_edit in sst.image_bboxes:
                     sst.image_bboxes.remove(element_to_edit)
                 else:
                     sst.table_bboxes.remove(element_to_edit)
 
                 sst.edit_idx = None
+                sst.phase = "요소 selectbox"
                 st.rerun()
