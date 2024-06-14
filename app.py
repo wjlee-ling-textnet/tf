@@ -60,9 +60,7 @@ with st.expander(
     status_placeholder = st.empty()
 preview_col, workspace_col = st.columns([0.5, 0.5])
 preview_col = preview_col.empty()
-# if "add_canvas" not in sst and "adjust_canvas" not in sst:
-#     # 무한 캔버스 로딩 문제 해결
-#     workspace_col = workspace_col.empty()
+
 
 ## 1단계: 전체 이미지/테이블 추출 & 저장
 if "pdf" not in sst:
@@ -174,9 +172,12 @@ if "markdown" in sst and sst.markdown:
         with page_save_path.open("w") as f:
             f.write(text_editor)
 
-        st.sidebar.button(
-            "다음 페이지로", on_click=_turn_page, args=(sst.page_idx + 1,)
-        )
+        if sst.page_idx < len(sst.pdf.pages) - 1:
+            st.sidebar.button(
+                "다음 페이지로", on_click=_turn_page, args=(sst.page_idx + 1,)
+            )
+        else:
+            st.sidebar.info("다음 페이지가 없습니다.")
 
 ## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
 else:
