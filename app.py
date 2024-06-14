@@ -131,13 +131,10 @@ with preview_col:
 if "markdown" in sst and sst.markdown:
     status_placeholder.write(sst.phase)
 
-    if (
-        st.sidebar.button(
-            "테이블/이미지 수정",
-            on_click=update_phase,
-            args=("테이블/이미지 수정",),
-        )
-        or sst.phase == "테이블/이미지 수정"
+    if st.sidebar.button(
+        "테이블/이미지 수정",
+        on_click=update_phase,
+        args=("테이블/이미지 수정",),
     ):
         sst.markdown = None
         sst.phase = "요소 selectbox"
@@ -210,7 +207,10 @@ else:
         if new_box := add_table(canvas_result):
             status_placeholder.write(new_box)
 
-    if check_process(sst.image_bboxes + sst.table_bboxes):
+    if (
+        check_process(sst.image_bboxes + sst.table_bboxes)
+        and sst.phase != "요소 selectbox"
+    ):
         status_placeholder.write(sst.table_bboxes)
         if st.sidebar.button(
             "테이블/이미지 검수 종료",
