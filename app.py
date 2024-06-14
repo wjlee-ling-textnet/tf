@@ -146,7 +146,7 @@ else:
             }
             canvas_result = st_canvas(**_kwargs)
 
-        elif sst.phase == "테이블 내용 수정" and sst.df is not None:
+        elif sst.phase == "테이블 내용 수정":
             new_dfs, code = spreadsheet(sst.df, sst.tabula_df)
 
     if (
@@ -158,6 +158,7 @@ else:
             status_placeholder.write(new_box)
 
     if check_process(sst.image_bboxes + sst.table_bboxes):
+        status_placeholder.write(sst.table_bboxes)
         if st.sidebar.button(
             "텍스트 추출", on_click=update_phase, args=("텍스트 추출",)
         ):
@@ -190,12 +191,11 @@ else:
             if (
                 st.sidebar.button(
                     "테이블 내용 수정",
-                    on_click=update_phase,
-                    args=("테이블 내용 수정",),
+                    on_click=edit_table_contents,
+                    args=(page,),
                 )
                 or sst.phase == "테이블 내용 수정"
             ):
-                edit_table_contents(page)
 
                 if "md_df_name" not in sst:
                     sst.md_df_idx = None
