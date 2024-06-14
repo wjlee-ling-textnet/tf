@@ -37,7 +37,9 @@ def _turn_page(new_page_idx=None):
         del sst["markdown"]
 
     if new_page_idx is not None:
+        # "다음 페이지로" 버튼 선택시
         sst.page_idx = new_page_idx
+        sst.user_input_page_idx = sst.page_idx + 1
     else:
         sst.page_idx = sst.user_input_page_idx - 1
     sst.page_preview = None
