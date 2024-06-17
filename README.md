@@ -1,61 +1,64 @@
-# Chunky
+# PDF-Markdown Converter
 
 ## How to
 
-### 1. Parse and extract elements
+`streamlit run app.py`
 
-`python -m parsers.pdf [pdf_path]`
-`python -m parsers.pdf [pdf_path] -fn=parse_pdf_fitz --save_dir=[저장 경로] --page_range=all -tc="{'output_format':'csv', 'strategy':'lines'}"`
+## What to do
 
-#### arguments
+### Stage 1: 이미지 원본 및 테이블 좌표 추출
 
-- `path` (mandatory)
-- `-fn:` function (parser) to use
+- #### 🤖 1: 접속 시 파일 전체의 이미지 원본과 테이블 좌표를 자동으로 추출
 
-  - `parse_pdf_fitz` only for now
+  - `Downloads` 폴더에 pdf 파일명으로 된 폴더 자동 생성
+  - 이미지: 내부 폴더 `images`에 `page{page_number}_({좌표}).jpg`라는 파일명으로 자동 생성
+  - 테이블: 내부 폴더 `tables`에 `page_{page_number}.pkl`파일에 페이지별 테이블 좌표 자동 저장
 
-- `--save_dir`: save path
-- `--page_range`
-  - `all` (default)
-  - page number: e.g. `3`
-  - range: e.g.`1-5`
-- `-ic` (`--image_config`)
-  - `output_dir` : `-save_dir` 내 추출된 이미지 폴더 (default: `images/`)
-- `-tc` (`--table_config`)
-  - `output_dir` : `-save_dir` 내 파싱된 csv 파일 저장 폴더 (default: `tables/`)
-  - `strategy` : fitz 용 테이블 인식 전략
-    - `lines` (default)
-    - `text`
-    - `strict_lines`
-  - `horizontal_strategy`
-  - `vertical_strategy`
-  - `output_format`
-    - `csv` : `output_dir`에 저장
-    - `dataframe`
-    - `markdown`
+- #### 🤖 2: 페이지별 preview 제공 및 추출된 이미지/테이블 범위 표기
+  ![기능_페이지별 프리뷰 및 추출된 요소 박스 표기](https://github.com/wjlee-ling-textnet/tf/assets/164138456/2535441f-65f0-4ab0-8ff2-1af33e4e9054)
+  - **[작업 페이지 번호]**의 **+/-**를 누르거나 숫자를 직접 기입하여 작업할 페이지 선택 가능
 
-#### results
+### Stage 2: 이미지, 테이블 정보 수정
 
-![extract_parsed](https://github.com/wjlee-ling/Talk2Me/assets/61496071/ea9e838c-e419-4801-9da4-d628d6ac3aa1)
+![](https://github.com/wjlee-ling-textnet/tf/assets/164138456/6e65b817-d867-43a2-ae1f-b80631223dc2)
 
-### 2. Augment manually
+- #### 🤖 3: 테이블 범위 수정
 
-작업자가 추출된 요소들 검수 및 수정 후 덮어쓰기
+  - 자동 생성된 테이블 범위가 잘못 된 경우 사용자가 직접 범위를 지정해줌으로써 추출 성능을 높일 수 있음
+  - **[요소 selectbox]**를 눌러서 수정할 테이블을 선택 후 **[테이블 범위 수정]** 클릭
+  - 수정할 요소의 좌표를 선택시 범위 표기선이 빨간색으로 표시
+  - 화면 왼쪽에 해당 페이지의 프리뷰, 오른쪽에 드래그로 범위 지정이 가능한 수정창이 표기되어 원본을 보며 바로 수정 가능
 
-### 3. Post-process
+- #### 🤖 4: 테이블 내용 검수
 
-`python -m parsers.postprocessors [path]`
+  - **[요소 selectbox]**를 눌러서 수정할 테이블을 선택 후 [테이블 내용 검수] 클릭
+  - 화면 오른쪽에 엑셀 형태의 창에서 수정 가능
+    - (주의) 셀 내용 수정시 "Edit entire column"을 끄고 값 앞뒤로 쌍따옴표를 붙여야 수정 가능
+  - `pdfplumber`, `tabula-py`가 각기 다른 알고리즘으로 추출한 결과(`df1`, `df2`)가 표기됨. 택일하여 수정 후 **[마크다운 변환할 데이터프레임 선택]** 클릭하여 수정 내용 저장
+  - 저장한 내용은 위 status 확장창에서 확인 가능
+    ![수정 결과 확인](https://github.com/wjlee-ling-textnet/tf/assets/164138456/c230bf7e-e4e9-4e1a-a3d1-297b3a00dd2e)
+  - 모든 테이블은 검수(및 필요시 수정)가 반드시 필요
 
-- 테이블 하이퍼링크를 그 내용으로 대체
-- TODO: 들여쓰기 기준 텍스트 재구조화
+- #### 🤖 5: 새 테이블 지정하여 추가
 
-#### arguments
+  - 추출 알고리즘이 자동 추출에 실패한 테이블의 범위를 사용자가 직접 지정하여 내용 추출 시도 가능
+  - **[테이블 추가]**를 클릭 시 화면 오른쪽에 드래그로 범위 지정이 가능한 수정창이 표기됨
+  - 드래그로 새 범위 지정 시, 자동으로 새 테이블의 범위 좌표 정보가 저장되며 이는 status 칸과 **[요소 selectbox]**를 눌러서 확인 가능
+    - 잘못 지정했을 시 오기입한 범위를 선택하여 **[요소 삭제]** 필요
 
-- `path`
-- `--output_dir` : 수정된 텍스트 파일 결과물 (default `output/`)
-- `--output_format` :
-  - `markdown` (default)
+- #### 🤖 6: 요소 삭제
+  - 이미지/테이블이 아닌 요소가 자동 추출되었거나 **[테이블 추가]**의 범위를 잘못 지정했을 경우에 **[요소 삭제]**를 클릭하여 요소 좌표 정보 삭제 가능
 
-#### results
+### Stage 3: 페이지별 마크다운 작성
 
-![postprocess](https://github.com/wjlee-ling/Talk2Me/assets/61496071/05b14779-adfb-4579-9658-c425f8da9737)
+- #### 🤖 7: 일반 텍스트(plaintext) 검수
+
+  - 모든 요소 정보를 검수 완료시 **[테이블/이미지 검수 종료]** 버튼 활성화
+  - 해당 버튼을 선택시 이전 단계에서 수정한 이미지/테이블의 추출 결과물과 이외 일반 텍스트 추출물이 같이 표기. 사용자는 원본 프리뷰(왼쪽 창)를 참고하여 최종 페이지 마크다운 검수
+  - 테이블과 이미지는 각기 다른 형식으로 구조화
+    - 테이블: 마크다운 형식
+    - 이미지: HTML 형식으로 하이퍼링크 생성. 해당 링크는 Stage 1에서 자동 저장된 해당 이미지의 저장 위치임
+    - 테이블 내의 텍스트는 중복 처리되어 삭제됨
+
+- #### 🤖 8: 페이지 마크다운 다운로드
+  - 모든 요소(이미지, 테이블, 텍스트) 검수/수정 후 **[페이지 마크다운 저장]** 클릭 시 (`Downloads`내) 프로젝트 폴더에 `page{page_number}.md`꼴로 자동 저장
