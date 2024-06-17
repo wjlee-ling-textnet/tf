@@ -20,7 +20,7 @@
 
 ### Stage 2: 이미지, 테이블 정보 수정
 
-![](https://github.com/wjlee-ling-textnet/tf/assets/164138456/6e65b817-d867-43a2-ae1f-b80631223dc2)
+![edit elements](https://github.com/wjlee-ling-textnet/tf/assets/164138456/6e65b817-d867-43a2-ae1f-b80631223dc2)
 
 - #### 🤖 3: 테이블 범위 수정
 
