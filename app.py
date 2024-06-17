@@ -1,0 +1,289 @@
+from parsers.images import extract_images_per_page, load_image_bboxes_per_page
+from parsers.tables import (
+    create_dataframes,
+    extract_table_coordinates_per_page,
+    export_to_markdown,
+    load_table_coordinates_per_page,
+)
+from parsers.plaintexts import get_plaintext_boxes
+from utils.streamlit import (
+    draw_boxes,
+    add_table,
+    update_phase,
+    update_edit_idx,
+    adjust_bbox,
+    check_process,
+    sort_elements_by_bbox,
+    reconstruct_page_from_elements,
+)
+
+import os
+import pdfplumber
+import tabula
+import streamlit as st
+
+from mitosheet.streamlit.v1 import spreadsheet
+from pathlib import Path
+from PIL import Image, ImageDraw
+from streamlit import session_state as sst
+from streamlit_drawable_canvas import st_canvas
+from streamlit_quill import st_quill
+from typing import Union, List
+
+
+def _turn_page(new_page_idx=None):
+    if "markdown" in sst:
+        # 2단계 활성화
+        del sst["markdown"]
+
+    if new_page_idx is not None:
+        # "다음 페이지로" 버튼 선택시
+        sst.page_idx = new_page_idx
+        sst.user_input_page_idx = sst.page_idx + 1
+    else:
+        sst.page_idx = sst.user_input_page_idx - 1
+    sst.page_preview = None
+    sst.table_bboxes = None
+    sst.image_bboxes = None
+    sst.plaintext_boxes = []
+    sst.edit_idx = None
+    sst.phase = None
+    sst.df = None
+    sst.tabula_df = None
+
+
+st.set_page_config(layout="wide")
+st.title("PDF-Markdown Converter")
+with st.expander(
+    label=f"status: {sst.phase if 'phase' in sst and sst.phase is not None else ''}"
+):
+    status_placeholder = st.empty()
+preview_col, workspace_col = st.columns([0.5, 0.5])
+preview_col = preview_col.empty()
+
+
+## 1단계: 전체 이미지/테이블 추출 & 저장
+if "pdf" not in sst:
+    sst.uploaded_file = st.file_uploader("Choose a PDF file to work on", type="pdf")
+    if sst.uploaded_file:
+        sst.pdf = pdfplumber.open(sst.uploaded_file)
+        sst.root_dir = Path(
+            os.path.join(
+                os.path.expanduser("~"),
+                "Downloads",
+                sst.uploaded_file.name.replace(" ", "_").rstrip(".pdf"),
+            )
+        )
+        sst.phase = None
+        sst.page_idx = 0
+        sst.edit_idx = None
+        sst.image_bboxes = None
+        sst.table_bboxes = None
+        sst.df = None
+        sst.tabula_df = None
+
+        if not sst.root_dir.exists():
+            sst.root_dir.mkdir(parents=True)
+
+        with st.spinner("파일에서 이미지/테이블 추출 중"):
+            for page in sst.pdf.pages:
+                ## 이미지 추출 & 저장
+                extract_images_per_page(page, output_dir=sst.root_dir / "images")
+
+                ## 테이블 좌표 추출 & 저장
+                extract_table_coordinates_per_page(page, sst.root_dir / "tables")
+    else:
+        st.stop()
+
+st.sidebar.number_input(
+    "작업 페이지 번호",
+    min_value=1,
+    max_value=len(sst.pdf.pages),
+    value=1,
+    on_change=_turn_page,
+    key="user_input_page_idx",
+)
+
+page = sst.pdf.pages[sst.page_idx]
+im = page.to_image()
+
+if sst.image_bboxes is None and sst.table_bboxes is None:
+    sst.image_bboxes = load_image_bboxes_per_page(
+        sst.page_idx + 1, sst.root_dir / "images"
+    )
+
+    sst.table_bboxes = load_table_coordinates_per_page(
+        sst.page_idx + 1, sst.root_dir / "tables"
+    )
+
+if "page_preview" not in sst or sst.page_preview is None:
+    sst.page_preview = draw_boxes(
+        im.original,
+        sst.image_bboxes + sst.table_bboxes,
+        colors=["green"] * len(sst.image_bboxes) + ["blue"] * len(sst.table_bboxes),
+    )
+
+with preview_col:
+    ## TODO: draw_boxes에 편입
+    st.image(sst.page_preview, use_column_width=True)
+
+### 3단계: 페이지 마크다운 생성
+if "markdown" in sst and sst.markdown:
+    status_placeholder.write(sst.phase)
+
+    if st.sidebar.button(
+        "테이블/이미지 수정",
+        on_click=update_phase,
+        args=("테이블/이미지 수정",),
+    ):
+        sst.markdown = None
+        sst.phase = "요소 selectbox"
+        st.rerun()
+
+    plaintext_bboxes = page.extract_words(
+        x_tolerance=2, extra_attrs=["fontname", "size"]
+    )
+    sst.plaintext_bboxes = get_plaintext_boxes(
+        texts=plaintext_bboxes, tables=sst.table_bboxes
+    )
+
+    elements = sort_elements_by_bbox(
+        sst.plaintext_bboxes + sst.table_bboxes + sst.image_bboxes
+    )
+
+    sst.markdown = reconstruct_page_from_elements(elements, save_root_dir=sst.root_dir)
+    with workspace_col:
+        text_editor = st_quill(st.session_state.markdown, key="text_editor")
+
+    if (
+        st.sidebar.button(
+            "페이지 마크다운 저장",
+            on_click=update_phase,
+            args=("페이지 마크다운 저장",),
+        )
+        or sst.phase == "페이지 마크다운 저장"
+    ):
+        page_save_path = (
+            st.session_state.root_dir / f"page{st.session_state.page_idx+1}.md"
+        )
+        with page_save_path.open("w") as f:
+            f.write(text_editor)
+
+        if sst.page_idx < len(sst.pdf.pages) - 1:
+            st.sidebar.button(
+                "다음 페이지로", on_click=_turn_page, args=(sst.page_idx + 1,)
+            )
+        else:
+            st.sidebar.info("다음 페이지가 없습니다.")
+
+## 2단계: 이미지/테이블 수정 및 검수. 페이지 마크다운 생성 전
+else:
+    with workspace_col:
+        if sst.phase in ["테이블 추가", "테이블 범위 수정"]:
+            im_pil = im.original.convert("RGB")
+            canvas_image = Image.new("RGB", im_pil.size, (255, 255, 255))
+            canvas_image.paste(im_pil)
+            _kwargs = {
+                "fill_color": "rgba(255, 165, 0, 0.3)",
+                "stroke_width": 2,
+                "stroke_color": "green",
+                "background_image": canvas_image,
+                "update_streamlit": True,
+                "height": im_pil.height,
+                "width": im_pil.width,
+                "drawing_mode": "rect",
+                "key": "canvas",
+            }
+            canvas_result = st_canvas(**_kwargs)
+
+        elif sst.phase == "테이블 내용 검수":
+            new_dfs, code = spreadsheet(sst.df, sst.tabula_df)
+
+    if (
+        st.sidebar.button("테이블 추가", on_click=update_phase, args=("테이블 추가",))
+        or sst.phase == "테이블 추가"
+    ):
+        # add_table(workspace_col, im)
+        if new_box := add_table(canvas_result):
+            status_placeholder.write(new_box)
+
+    if (
+        check_process(sst.image_bboxes + sst.table_bboxes)
+        and sst.phase != "요소 selectbox"
+    ):
+        status_placeholder.write(sst.table_bboxes)
+        if st.sidebar.button(
+            "테이블/이미지 검수 종료",
+            on_click=update_phase,
+            args=("테이블/이미지 검수 종료",),
+        ):
+            sst.markdown = " "
+            sst.markdown += "\n".join(
+                [bbox[4] for bbox in sst.image_bboxes + sst.table_bboxes]
+            )
+            sst.phase = "페이지 마크다운 작성"
+            st.rerun()
+
+    else:
+        # if len(sst.image_bboxes + sst.table_bboxes) > 0:
+        element_to_edit = st.sidebar.selectbox(
+            "요소 selectbox",
+            sst.image_bboxes + sst.table_bboxes,
+            key="element_to_edit",
+            index=sst.edit_idx,
+            on_change=update_edit_idx,
+            args=(im.original,),
+        )
+        status_placeholder.write(element_to_edit)
+        if element_to_edit:
+            if (
+                st.sidebar.button(
+                    "테이블 범위 수정",
+                    on_click=update_phase,
+                    args=("테이블 범위 수정",),
+                )
+                or sst.phase == "테이블 범위 수정"
+            ):
+                # adjust_bbox(workspace_col, im)
+                if new_box := adjust_bbox(canvas_result, page_img=im):
+                    status_placeholder.write(new_box)
+                    sst.phase = "요소 selectbox"
+                    st.rerun()
+
+            if (
+                st.sidebar.button(
+                    "테이블 내용 검수",
+                    on_click=create_dataframes,
+                    args=(page,),
+                )
+                or sst.phase == "테이블 내용 검수"
+            ):
+
+                if "md_df_name" not in sst:
+                    sst.md_df_idx = None
+
+                if chosen_df := st.sidebar.selectbox(
+                    label="마크다운 변환할 데이터프레임 선택",
+                    options=map(lambda num: f"df{str(num+1)}", range(len(new_dfs))),
+                    index=None,
+                    key="md_candidate_name",
+                    on_change=export_to_markdown,
+                    args=(new_dfs,),
+                ):
+                    sst.phase = "요소 selectbox"
+
+            if (
+                st.sidebar.button(
+                    "요소 삭제", on_click=update_phase, args=("요소 삭제",)
+                )
+                or sst.phase == "요소 삭제"
+            ):
+                status_placeholder.write(f"🤖 요소 삭제: {element_to_edit}")
+                if element_to_edit in sst.image_bboxes:
+                    sst.image_bboxes.remove(element_to_edit)
+                else:
+                    sst.table_bboxes.remove(element_to_edit)
+
+                sst.edit_idx = None
+                sst.phase = "요소 selectbox"
+                st.rerun()
